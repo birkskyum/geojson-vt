@@ -1,5 +1,6 @@
 ## main
 ### ✨ Features and improvements
+- Reduce memory usage and indexing time of clustering ([#218](https://github.com/maplibre/geojson-vt/pull/218)) (by [@birkskyum](https://github.com/birkskyum))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
