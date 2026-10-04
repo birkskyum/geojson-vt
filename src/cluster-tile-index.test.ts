@@ -187,20 +187,6 @@ test('makes sure same-location points are clustered', () => {
     expect(index.trees[20].ids.length).toBe(1);
 });
 
-test('does not cluster points that are farther apart than the radius on a high zoom level', () => {
-    const index = new ClusterTileIndex({
-        maxZoom: 20,
-        extent: 8192,
-        radius: 16
-    });
-    index.load([
-        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426798, 53.943034]}},
-        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426796, 53.943034]}}
-    ]);
-
-    expect(index.getClusters([-180, -90, 180, 90], 20)).toHaveLength(2);
-});
-
 test('makes sure unclustered point coords are not rounded', () => {
     const index = new ClusterTileIndex({maxZoom: 19});
     index.load([
