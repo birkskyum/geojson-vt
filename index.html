@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Clustering memory: geojson-vt 6.1.2 vs this PR</title>
+    <style>
+        body { margin: 8px; font: 13px sans-serif; }
+        #results { display: flex; gap: 8px; margin-top: 8px; }
+        #results > pre { flex: 1; margin: 0; padding: 8px; min-height: 5em; background: #eee; font: 13px monospace; }
+    </style>
+</head>
+<body>
+<select id="points">
+    <option value="250000">250,000 points</option>
+    <option value="500000" selected>500,000 points</option>
+    <option value="1000000">1,000,000 points</option>
+</select>
+<button id="run" disabled>Run</button>
+Left - 6.1.2 / Right - This PR
+<div id="results">
+    <pre id="before"></pre>
+    <pre id="after"></pre>
+</div>
+<script type="module">
+    const BEFORE = 'https://cdn.jsdelivr.net/npm/@maplibre/geojson-vt@6.1.2/dist/geojson-vt.mjs';
+    const AFTER = 'https://cdn.jsdelivr.net/gh/birkskyum/geojson-vt@0a85a944d726fcf0487ae862e43d3b5e9f8875f5/geojson-vt.mjs';
+
+    // Chrome's performance.memory leaves out typed arrays, so the bytes they allocate are counted here.
+    let typedArrayBytes = 0;
+    for (const name of ['ArrayBuffer', 'Int32Array', 'Uint32Array', 'Uint16Array', 'Float32Array', 'Float64Array']) {
+        globalThis[name] = new Proxy(globalThis[name], {
+            construct(target, args) {
+                const created = new target(...args);
+                if (typeof args[0] === 'number') typedArrayBytes += created.byteLength;
+                return created;
+            }
+        });
+    }
+    const typedArrayPrototype = Object.getPrototypeOf(Int32Array.prototype);
+    const slice = typedArrayPrototype.slice;
+    typedArrayPrototype.slice = function (...args) {
+        const created = slice.apply(this, args);
+        typedArrayBytes += created.byteLength;
+        return created;
+    };
+
+    const [before, after] = await Promise.all([import(BEFORE), import(AFTER)]);
+
+    function heap() {
+        return performance.memory ? performance.memory.usedJSHeapSize : 0;
+    }
+
+    // With log on, the cluster index logs once per zoom level, and memory is sampled there.
+    let peak = 0;
+    function sample() {
+        peak = Math.max(peak, heap() + typedArrayBytes);
+    }
+    console.log = console.time = console.timeEnd = sample;
+
+    function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    // Waits for the garbage of the previous build to be collected, so it isn't counted again.
+    async function settle(output, idle) {
+        for (let i = 0; i < 120 && heap() > idle + 30e6; i++) {
+            output.textContent = 'waiting for the garbage collector...';
+            await sleep(250);
+        }
+    }
+
+    function createFeatures(count) {
+        let seed = 1;
+        function random() {
+            seed = (seed * 1664525 + 1013904223) >>> 0;
+            return seed / 4294967296;
+        }
+        const features = [];
+        for (let i = 0; i < count; i++) {
+            features.push({type: 'Feature', properties: {index: i}, geometry: {type: 'Point', coordinates: [-180 + 360 * random(), -80 + 160 * random()]}});
+        }
+        return features;
+    }
+
+    // Builds a clustered index with the options maplibre-gl-js uses for a clustered GeoJSON source.
+    async function build(lib, count, output, idle) {
+        await settle(output, idle);
+        output.textContent = 'building...';
+        await sleep(50);
+        const start = heap();
+        typedArrayBytes = 0;
+        peak = 0;
+        const features = createFeatures(count);
+        const startTime = performance.now();
+        const index = new lib.GeoJSONVT({type: 'FeatureCollection', features}, {
+            maxZoom: 18,
+            extent: 8192,
+            buffer: 2048,
+            tolerance: 6,
+            updateable: true,
+            cluster: true,
+            clusterOptions: {maxZoom: 17, minPoints: 2, extent: 8192, radius: 800, log: true}
+        });
+        const seconds = (performance.now() - startTime) / 1000;
+        sample();
+        const memory = performance.memory ? `${Math.round((peak - start) / 1048576)} MB` : 'needs Chrome';
+        output.textContent = `built in ${seconds.toFixed(1)} s\npeak memory ${memory}\n${index.getTile(0, 0, 0).features.length} clusters in the z0 tile`;
+    }
+
+    const run = document.getElementById('run');
+    const idle = heap();
+    run.disabled = false;
+    run.onclick = async () => {
+        const count = +document.getElementById('points').value;
+        run.disabled = true;
+        document.getElementById('before').textContent = '';
+        document.getElementById('after').textContent = '';
+        await build(before, count, document.getElementById('before'), idle);
+        await build(after, count, document.getElementById('after'), idle);
+        run.disabled = false;
+    };
+</script>
+</body>
+</html>
