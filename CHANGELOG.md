@@ -6,6 +6,12 @@
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
 
+## 6.1.2
+
+### 🐞 Bug fixes
+
+- Fixed `simplify`'s recursion call stack error ([#218](https://github.com/maplibre/geojson-vt/pull/218)) (by [@HarelM](https://github.com/HarelM))
+
 ## 6.1.1
 
 ### 🐞 Bug fixes
