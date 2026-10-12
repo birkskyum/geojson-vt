@@ -149,6 +149,8 @@ function convertMultiPolygonFeature(features: GeoJSONVTInternalFeature[], id: nu
 
         out.push(polygonOut);
     }
+    if (!out.length) return;
+
     features.push(createFeature(id, 'MultiPolygon', out, properties));
 }
 

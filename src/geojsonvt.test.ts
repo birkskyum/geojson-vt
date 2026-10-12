@@ -86,3 +86,14 @@ test('skips an empty polygon of a MultiPolygon', () => {
 
     expect(index.getTile(0, 0, 0).features[0].geometry).toEqual([[[2048, 2048], [2162, 1934], [2162, 2048], [2048, 2048]]]);
 });
+
+test('leaves out a MultiPolygon that has only empty polygons', () => {
+    const multiPolygon = {
+        type: 'MultiPolygon' as const,
+        coordinates: [[]] as GeoJSON.Position[][][]
+    };
+
+    const index = new GeoJSONVT(multiPolygon, {updateable: true});
+
+    expect(index.getData()).toEqual({type: 'FeatureCollection', features: []});
+});
