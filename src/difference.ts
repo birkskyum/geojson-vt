@@ -157,11 +157,8 @@ function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJ
             properties: changeProps ? applyPropertyUpdates(vtFeature.tags, update) : vtFeature.tags
         };
 
-        let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, options);
+        let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, {...options, promoteId: undefined, generateId: false});
         features = wrap(features, options);
-        for (const feature of features) {
-            feature.id = vtFeature.id;
-        }
         return features;
     }
 
