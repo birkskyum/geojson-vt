@@ -138,7 +138,7 @@ export function applySourceDiff(source: GeoJSONVTInternalFeature[], dataDiff: Ge
  * @param vtFeatures - the original features
  * @param update - the update object to apply
  * @param options - the options to use for the wrap method
- * @returns Updated features. If geometry is updated, returns new feature(s) converted from geojson and wrapped. If only properties are updated, returns feature(s) with tags updated.
+ * @returns Updated features. If geometry is updated, returns new feature(s) converted from geojson and wrapped, with the id the feature already has. If only properties are updated, returns feature(s) with tags updated.
  */
 function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJSONVTFeatureDiff, options: GeoJSONVTOptions): GeoJSONVTInternalFeature[] {
     const changeGeometry = !!update.newGeometry;
@@ -159,6 +159,9 @@ function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJ
 
         let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, options);
         features = wrap(features, options);
+        for (const feature of features) {
+            feature.id = vtFeature.id;
+        }
         return features;
     }
 
