@@ -75,3 +75,25 @@ test('updateClusterOptions stops aggregating cluster properties when it removes 
 
     expect(index.getTile(0, 0, 0).features.map(f => (f.tags as {sum?: number}).sum)).toEqual([undefined, undefined]);
 });
+
+test('keeps the corner of a polygon whose vertex lies on the left edge of a tile', () => {
+    const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [[[-90, -90], [0, -90], [90, -90], [0, 0], [-90, -90]]]
+    };
+
+    const index = new GeoJSONVT(polygon, {indexMaxZoom: 0, maxZoom: 24, tolerance: 1.5, buffer: 0});
+
+    expect(index.getTile(1, 1, 1).features[0].geometry).toEqual([[[0, 4096], [0, 0], [0, 0], [2048, 4096], [0, 4096]]]);
+});
+
+test('keeps the corner of a polygon whose vertex lies on the right edge of a tile', () => {
+    const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [[[20, 34.365234375], [80, 4.34326171875], [45, 4.34326171875], [20, 4.34326171875], [20, 34.365234375]]]
+    };
+
+    const index = new GeoJSONVT(polygon, {maxZoom: 5, buffer: 0});
+
+    expect(index.getTile(3, 4, 3).features[0].geometry).toEqual([[[1820, 762], [4096, 1986], [4096, 3700], [1820, 3700], [1820, 762]]]);
+});
