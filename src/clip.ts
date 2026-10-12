@@ -169,7 +169,6 @@ function clipLine(geom: SliceFixedArray, newGeom: SliceArray[], start: number, e
     const intersect = axis === AxisType.X ? intersectX : intersectY;
     let len = geom.start;
     let segLen, t;
-    let entersAtVertex = false;
 
     for (let i = 0; i < geom.points.length - 3; i += 3) {
         const ax = geom.points[i];
@@ -185,23 +184,19 @@ function clipLine(geom: SliceFixedArray, newGeom: SliceArray[], start: number, e
 
         if (a < start) {
             // ---|-->  | (line enters the clip region from the left)
-            if (b > start) {
+            if (b >= start) {
                 t = intersect(slice, ax, ay, bx, by, start);
                 if (trackMetrics) slice.start = len + segLen * t;
             }
-            entersAtVertex = b === start;
         } else if (a > end) {
             // |  <--|--- (line enters the clip region from the right)
-            if (b < end) {
+            if (b <= end) {
                 t = intersect(slice, ax, ay, bx, by, end);
                 if (trackMetrics) slice.start = len + segLen * t;
             }
-            entersAtVertex = b === end;
         } else {
-            addPoint(slice.points, ax, ay, entersAtVertex ? 1 : az);
-            entersAtVertex = false;
+            addPoint(slice.points, ax, ay, az);
         }
-        if (entersAtVertex && trackMetrics) slice.start = len + segLen;
 
         if (b < start && a >= start) {
             // <--|---  | or <--|-----|--- (line exits the clip region on the left)
@@ -230,7 +225,7 @@ function clipLine(geom: SliceFixedArray, newGeom: SliceArray[], start: number, e
     const ay = geom.points[last + 1];
     const az = geom.points[last + 2];
     const a = axis === AxisType.X ? ax : ay;
-    if (a >= start && a <= end) addPoint(slice.points, ax, ay, entersAtVertex ? 1 : az);
+    if (a >= start && a <= end) addPoint(slice.points, ax, ay, az);
 
     // close the polygon if its endpoints are not the same after clipping
     last = slice.points.length - 3;
