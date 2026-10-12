@@ -138,7 +138,7 @@ export function applySourceDiff(source: GeoJSONVTInternalFeature[], dataDiff: Ge
  * @param vtFeatures - the original features
  * @param update - the update object to apply
  * @param options - the options to use for the wrap method
- * @returns Updated features. If geometry is updated, returns new feature(s) converted from geojson and wrapped. If only properties are updated, returns feature(s) with tags updated.
+ * @returns Updated features. If geometry is updated, returns new feature(s) converted from geojson and wrapped, with the id the feature already has. If only properties are updated, returns feature(s) with tags updated.
  */
 function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJSONVTFeatureDiff, options: GeoJSONVTOptions): GeoJSONVTInternalFeature[] {
     const changeGeometry = !!update.newGeometry;
@@ -157,7 +157,7 @@ function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJ
             properties: changeProps ? applyPropertyUpdates(vtFeature.tags, update) : vtFeature.tags
         };
 
-        let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, options);
+        let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, {...options, promoteId: undefined, generateId: false});
         features = wrap(features, options);
         return features;
     }
@@ -213,7 +213,7 @@ export function diffToHashed(diff: GeoJSONVTSourceDiff, options: GeoJSONVTOption
     const hashed: HashedGeoJSONVTSourceDiff = {
         removeAll: diff.removeAll,
         remove: new Set(diff.remove || []),
-        add: new Map(diff.add?.map(feature => [options.promoteId ? feature.properties[options.promoteId] : feature.id, feature])),
+        add: new Map(diff.add?.map(feature => [options.promoteId ? feature.properties?.[options.promoteId] : feature.id, feature])),
         update: new Map(diff.update?.map(update => [update.id, update]))
     };
 

@@ -35,6 +35,11 @@ export const defaultClusterOptions: Required<SuperclusterOptions> = {
 };
 
 /**
+ * The highest zoom level to cluster on. A cluster id keeps its zoom level in five bits.
+ */
+const MAX_ZOOM = 30;
+
+/**
  * Projected coordinates, which are 0 to 1 inside the world, are stored as integers with this many steps per world,
  * so that they take half the memory of doubles. One step is ~4 cm at the equator.
  */
@@ -72,7 +77,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     points: GeoJSONVTInternalPointFeature[];
 
     constructor(options?: SuperclusterOptions) {
-        this.options = Object.assign(Object.create(defaultClusterOptions), options) as Required<SuperclusterOptions>;
+        this.options = createOptions(options);
         this.trees = new Array(this.options.maxZoom + 1);
         this.stride = this.options.reduce ? 5 : 4;
         this.clusterProps = [];
@@ -130,7 +135,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
      * @param features 
      */
     updateIndex(features: GeoJSONVTInternalFeature[], _affected: GeoJSONVTInternalFeature[], options: GeoJSONVTOptions) {
-        this.options = Object.assign(Object.create(defaultClusterOptions), options.clusterOptions) as Required<SuperclusterOptions>;
+        this.options = createOptions(options.clusterOptions);
         this.initialize(features);
     }
 
@@ -559,6 +564,13 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         const result = this.options.map(original);
         return clone && result === original ? Object.assign({}, result) : result;
     }
+}
+
+function createOptions(options?: SuperclusterOptions): Required<SuperclusterOptions> {
+    const result = Object.assign(Object.create(defaultClusterOptions), options) as Required<SuperclusterOptions>;
+    result.minZoom = Math.min(result.minZoom, MAX_ZOOM);
+    result.maxZoom = Math.min(result.maxZoom, MAX_ZOOM);
+    return result;
 }
 
 function getClusterFeature(coords: Int32Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[]): ClusterFeatureInternal {
