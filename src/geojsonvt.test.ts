@@ -97,3 +97,16 @@ test('keeps the corner of a polygon whose vertex lies on the right edge of a til
 
     expect(index.getTile(3, 4, 3).features[0].geometry).toEqual([[[1820, 762], [4096, 1986], [4096, 3700], [1820, 3700], [1820, 762]]]);
 });
+
+test('keeps the part of a line that enters a tile exactly at a vertex', () => {
+    const line = {
+        type: 'LineString' as const,
+        coordinates: [[-90, 20], [0, 20], [90, 20]]
+    };
+
+    const index = new GeoJSONVT(line, {lineMetrics: true, buffer: 0});
+
+    const feature = index.getTile(1, 1, 0).features[0];
+    expect(feature.geometry).toEqual([[[0, 3631], [2048, 3631]]]);
+    expect(feature.tags).toEqual({geojsonvt_clip_start: 0.5, geojsonvt_clip_end: 1});
+});
