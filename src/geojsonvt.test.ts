@@ -76,6 +76,28 @@ test('updateClusterOptions stops aggregating cluster properties when it removes 
     expect(index.getTile(0, 0, 0).features.map(f => (f.tags as {sum?: number}).sum)).toEqual([undefined, undefined]);
 });
 
+test('skips an empty polygon of a MultiPolygon', () => {
+    const multiPolygon = {
+        type: 'MultiPolygon' as const,
+        coordinates: [[[[0, 0], [10, 0], [10, 10], [0, 0]]], []]
+    };
+
+    const index = new GeoJSONVT(multiPolygon, {maxZoom: 5});
+
+    expect(index.getTile(0, 0, 0).features[0].geometry).toEqual([[[2048, 2048], [2162, 1934], [2162, 2048], [2048, 2048]]]);
+});
+
+test('leaves out a MultiPolygon that has only empty polygons', () => {
+    const multiPolygon = {
+        type: 'MultiPolygon' as const,
+        coordinates: [[]] as GeoJSON.Position[][][]
+    };
+
+    const index = new GeoJSONVT(multiPolygon, {updateable: true});
+
+    expect(index.getData()).toEqual({type: 'FeatureCollection', features: []});
+});
+
 test('keeps the corner of a polygon whose vertex lies on the left edge of a tile', () => {
     const polygon = {
         type: 'Polygon' as const,
