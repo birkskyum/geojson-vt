@@ -54,7 +54,8 @@ export type GeoJSONVTOptions = {
      */
     debug?: number;
     /**
-     * Enable Supercluster for point features.
+     * Enable Supercluster for point features. Each position of a MultiPoint feature is clustered as a point of its own.
+     * Other features are left out.
      * @default false
      */
     cluster?: boolean;
@@ -249,7 +250,8 @@ export type SuperclusterOptions = {
      */
     log?: boolean;
     /**
-     * Whether to generate numeric ids for input features (in vector tiles)
+     * Whether to generate numeric ids for input features (in vector tiles). Each position of a MultiPoint feature
+     * gets an id of its own.
      * @default false
      */
     generateId?: boolean;
