@@ -218,6 +218,19 @@ test('does not keep the cluster properties of an earlier load', () => {
     expect(index.clusterProps.length).toBe(count);
 });
 
+test('limits minZoom and maxZoom to 30, the highest zoom level a cluster id can hold', () => {
+    const index = new ClusterTileIndex({minZoom: 40, maxZoom: 40});
+    const point: GeoJSON.Feature<GeoJSON.Point> = {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [10, 10]}};
+    index.load([point, point, point]);
+
+    const cluster = index.getClusters([-180, -90, 180, 90], 30)[0];
+    const clusterId = (cluster.properties as ClusterProperties).cluster_id;
+
+    expect(index.getLeaves(clusterId)).toHaveLength(3);
+    expect(index.getChildren(clusterId)).toHaveLength(3);
+    expect(index.getClusterExpansionZoom(clusterId)).toBe(31);
+});
+
 test('clusters each position of a MultiPoint feature', () => {
     const multiPoint: GeoJSON.Feature<GeoJSON.MultiPoint> = {
         type: 'Feature',
