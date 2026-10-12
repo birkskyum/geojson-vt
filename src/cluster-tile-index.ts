@@ -549,6 +549,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
 
 function createOptions(options?: SuperclusterOptions): Required<SuperclusterOptions> {
     const result = Object.assign(Object.create(defaultClusterOptions), options) as Required<SuperclusterOptions>;
+    result.minZoom = Math.min(result.minZoom, MAX_ZOOM);
     result.maxZoom = Math.min(result.maxZoom, MAX_ZOOM);
     return result;
 }
