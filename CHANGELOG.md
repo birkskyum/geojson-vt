@@ -4,7 +4,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
-- Fix a polygon losing a corner when one of its vertices lies exactly on a tile edge ([#226](https://github.com/maplibre/geojson-vt/pull/226)) (by [@birkskyum](https://github.com/birkskyum))
+- Fix a polygon losing parts in a tile when one of its vertices lies exactly on a tile edge ([#226](https://github.com/maplibre/geojson-vt/pull/226)) (by [@birkskyum](https://github.com/birkskyum))
 - Stop the cluster index from keeping the cluster properties of earlier builds, and fix `updateClusterOptions` throwing when it adds or removes a `reduce` function ([#225](https://github.com/maplibre/geojson-vt/pull/225)) (by [@birkskyum](https://github.com/birkskyum))
 - _...Add new stuff here..._
 
