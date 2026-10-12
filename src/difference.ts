@@ -1,4 +1,4 @@
-import {convertToInternal} from './convert';
+import {convertToInternal, featureToInternal} from './convert';
 import {wrap} from './wrap';
 import type { GeoJSONVTInternalFeature, GeoJSONVTOptions } from './definitions';
 
@@ -157,9 +157,9 @@ function getUpdatedFeatures(vtFeatures: GeoJSONVTInternalFeature[], update: GeoJ
             properties: changeProps ? applyPropertyUpdates(vtFeature.tags, update) : vtFeature.tags
         };
 
-        let features = convertToInternal({type: 'FeatureCollection', features: [geojsonFeature]}, {...options, promoteId: undefined, generateId: false});
-        features = wrap(features, options);
-        return features;
+        const features: GeoJSONVTInternalFeature[] = [];
+        featureToInternal(features, geojsonFeature, vtFeature.id, options);
+        return wrap(features, options);
     }
 
     if (changeProps) {

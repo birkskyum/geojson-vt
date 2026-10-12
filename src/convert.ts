@@ -17,20 +17,30 @@ export function convertToInternal(data: GeoJSON.GeoJSON, options: GeoJSONVTOptio
     switch (data.type) {
         case 'FeatureCollection':
             for (let i = 0; i < data.features.length; i++) {
-                featureToInternal(features, data.features[i], options, i);
+                featureToInternal(features, data.features[i], getFeatureId(data.features[i], options, i), options);
             }
             break;
         case 'Feature':
-            featureToInternal(features, data, options);
+            featureToInternal(features, data, getFeatureId(data, options), options);
             break;
-        default:
-            featureToInternal(features, {type: "Feature" as const, geometry: data, properties: undefined}, options);
+        default: {
+            const feature: GeoJSON.Feature = {type: 'Feature', geometry: data, properties: undefined};
+            featureToInternal(features, feature, getFeatureId(feature, options), options);
+        }
     }
 
     return features;
 }
 
-function featureToInternal(features: GeoJSONVTInternalFeature[], geojson: GeoJSON.Feature, options: GeoJSONVTOptions, index?: number, depth = 0) {
+/**
+ * converts a GeoJSON feature to internal source features with the given id, and adds them to the given features
+ * @param features
+ * @param geojson
+ * @param id
+ * @param options
+ * @param depth
+ */
+export function featureToInternal(features: GeoJSONVTInternalFeature[], geojson: GeoJSON.Feature, id: number | string | undefined, options: GeoJSONVTOptions, depth = 0) {
     if (!geojson.geometry) return;
 
     if (depth > MAX_GEOMETRY_COLLECTION_DEPTH) {
@@ -38,14 +48,13 @@ function featureToInternal(features: GeoJSONVTInternalFeature[], geojson: GeoJSO
     }
 
     if (geojson.geometry.type === 'GeometryCollection') {
-        convertGeometryCollection(features, geojson, geojson.geometry, options, index, depth + 1);
+        convertGeometryCollection(features, geojson, geojson.geometry, id, options, depth + 1);
         return;
     }
 
     const coords = geojson.geometry.coordinates;
     if (!coords?.length) return;
 
-    const id = getFeatureId(geojson, options, index);
     const tolerance = Math.pow(options.tolerance / ((1 << options.maxZoom) * options.extent), 2);
 
     switch (geojson.geometry.type) {
@@ -88,14 +97,14 @@ function getFeatureId(geojson: GeoJSON.Feature, options: GeoJSONVTOptions, index
     return geojson.id;
 }
 
-function convertGeometryCollection(features: GeoJSONVTInternalFeature[], geojson: GeoJSON.Feature, geometry: GeoJSON.GeometryCollection, options: GeoJSONVTOptions, index?: number, depth = 0) {
+function convertGeometryCollection(features: GeoJSONVTInternalFeature[], geojson: GeoJSON.Feature, geometry: GeoJSON.GeometryCollection, id: number | string | undefined, options: GeoJSONVTOptions, depth = 0) {
     for (const geom of geometry.geometries) {
         featureToInternal(features, {
             id: geojson.id,
             type: 'Feature',
             geometry: geom,
             properties: geojson.properties
-        }, options, index, depth);
+        }, id, options, depth);
     }
 }
 
