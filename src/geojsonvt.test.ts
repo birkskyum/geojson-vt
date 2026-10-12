@@ -97,3 +97,38 @@ test('leaves out a MultiPolygon that has only empty polygons', () => {
 
     expect(index.getData()).toEqual({type: 'FeatureCollection', features: []});
 });
+
+test('keeps the corner of a polygon whose vertex lies on the left edge of a tile', () => {
+    const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [[[-90, -90], [0, -90], [90, -90], [0, 0], [-90, -90]]]
+    };
+
+    const index = new GeoJSONVT(polygon, {indexMaxZoom: 0, maxZoom: 24, tolerance: 1.5, buffer: 0});
+
+    expect(index.getTile(1, 1, 1).features[0].geometry).toEqual([[[0, 4096], [0, 0], [0, 0], [2048, 4096], [0, 4096]]]);
+});
+
+test('keeps the corner of a polygon whose vertex lies on the right edge of a tile', () => {
+    const polygon = {
+        type: 'Polygon' as const,
+        coordinates: [[[20, 34.365234375], [80, 4.34326171875], [45, 4.34326171875], [20, 4.34326171875], [20, 34.365234375]]]
+    };
+
+    const index = new GeoJSONVT(polygon, {maxZoom: 5, buffer: 0});
+
+    expect(index.getTile(3, 4, 3).features[0].geometry).toEqual([[[1820, 762], [4096, 1986], [4096, 3700], [1820, 3700], [1820, 762]]]);
+});
+
+test('keeps the part of a line that enters a tile exactly at a vertex', () => {
+    const line = {
+        type: 'LineString' as const,
+        coordinates: [[-90, 20], [0, 20], [90, 20]]
+    };
+
+    const index = new GeoJSONVT(line, {lineMetrics: true, buffer: 0});
+
+    const feature = index.getTile(1, 1, 0).features[0];
+    expect(feature.geometry).toEqual([[[0, 3631], [2048, 3631]]]);
+    expect(feature.tags).toEqual({geojsonvt_clip_start: 0.5, geojsonvt_clip_end: 1});
+});
