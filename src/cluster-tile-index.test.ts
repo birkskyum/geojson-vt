@@ -217,3 +217,39 @@ test('does not keep the cluster properties of an earlier load', () => {
 
     expect(index.clusterProps.length).toBe(count);
 });
+
+test('does not cluster points that are farther apart than the radius on a high zoom level', () => {
+    const index = new ClusterTileIndex({
+        maxZoom: 20,
+        extent: 8192,
+        radius: 16
+    });
+    index.load([
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426798, 53.943034]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426796, 53.943034]}}
+    ]);
+
+    expect(index.getClusters([-180, -90, 180, 90], 20)).toHaveLength(2);
+});
+
+test('keeps a point far outside the world out of the tiles', () => {
+    const index = new ClusterTileIndex();
+    index.load([
+        {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [10, 10]}},
+        {type: 'Feature', properties: {name: 'far east'}, geometry: {type: 'Point', coordinates: [1440, 10]}},
+        {type: 'Feature', properties: {name: 'far west'}, geometry: {type: 'Point', coordinates: [-1440, 10]}}
+    ]);
+
+    expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
+});
+
+test('leaves out a point without a position', () => {
+    const index = new ClusterTileIndex();
+    index.load([
+        {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [10, 10]}},
+        {type: 'Feature', properties: {name: 'nowhere'}, geometry: {type: 'Point', coordinates: [NaN, NaN]}}
+    ]);
+
+    expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
+    expect(index.getClusters([-180, -90, 180, 90], 0)).toHaveLength(1);
+});

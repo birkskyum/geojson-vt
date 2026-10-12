@@ -12,9 +12,9 @@ type ClusterOrPointFeatureInternal = ClusterFeatureInternal | GeoJSONVTInternalP
 /** @internal */
 export type KDBushWithData = KDBush & {
     /**
-     * The projected x and y of each point or cluster.
+     * The projected x and y of each point or cluster, as integers, see `encode`.
      */
-    flatCoords: Float64Array;
+    flatCoords: Int32Array;
     /**
      * The other values of each point or cluster, at the `OFFSET_` positions.
      */
@@ -33,6 +33,24 @@ export const defaultClusterOptions: Required<SuperclusterOptions> = {
     reduce: null,
     map: (props) => props as Record<string, unknown>
 };
+
+/**
+ * Projected coordinates, which are 0 to 1 inside the world, are stored as integers with this many steps per world,
+ * so that they take half the memory of doubles. One step is ~4 cm at the equator.
+ */
+const SCALE = 0x40000000;
+
+/**
+ * A projected coordinate as an integer. A coordinate more than two worlds from the center of the world is held at
+ * the limit, since it does not fit.
+ */
+function encode(coord: number): number {
+    return Math.max(-0x80000000, Math.min(0x7fffffff, Math.round((coord - 0.5) * SCALE)));
+}
+
+function decode(value: number): number {
+    return value / SCALE + 0.5;
+}
 
 const OFFSET_ZOOM = 0;
 const OFFSET_ID = 1;
@@ -135,17 +153,18 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         const notProcessed = maxZoom + 1;
 
         // generate a cluster object for each point and index input points into a KD-tree
-        const coords = new Float64Array(points.length * 2);
+        const coords = new Int32Array(points.length * 2);
         const data = new Int32Array(points.length * stride);
         let numItems = 0;
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
-            if (!p?.geometry) continue;
+            // a point without a position is left out, an integer cannot hold "not a number"
+            if (!p?.geometry || Number.isNaN(p.geometry[0]) || Number.isNaN(p.geometry[1])) continue;
 
             // store internal point/cluster data in flat numeric arrays for performance
-            coords[numItems * 2] = Math.fround(p.geometry[0]); // projected point coordinates
-            coords[numItems * 2 + 1] = Math.fround(p.geometry[1]);
+            coords[numItems * 2] = encode(p.geometry[0]); // projected point coordinates
+            coords[numItems * 2 + 1] = encode(p.geometry[1]);
             const k = numItems * stride;
             data[k + OFFSET_ZOOM] = notProcessed; // the last zoom the point was processed at
             data[k + OFFSET_ID] = i; // index of the source feature in the original input array
@@ -159,7 +178,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
 
         // cluster points on max zoom, then cluster the results on previous zoom, etc.;
         // results in a cluster hierarchy across zoom levels
-        const nextCoords = new Float64Array(numItems * 2);
+        const nextCoords = new Int32Array(numItems * 2);
         const nextData = new Int32Array(numItems * stride);
         for (let z = maxZoom; z >= minZoom; z--) {
             const now = Date.now();
@@ -204,7 +223,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         }
 
         const tree = this.trees[this.limitZoom(zoom)];
-        const ids = tree.range(projectX(minLng), projectY(maxLat), projectX(maxLng), projectY(minLat));
+        const ids = tree.range(encode(projectX(minLng)), encode(projectY(maxLat)), encode(projectX(maxLng)), encode(projectY(minLat)));
         const coords = tree.flatCoords;
         const data = tree.flatData;
         const clusters: ClusterOrPointFeatureInternal[] = [];
@@ -231,7 +250,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         const data = tree.flatData;
         if (originId >= tree.numItems) throw clusterError;
 
-        const r = this.options.radius / (this.options.extent * Math.pow(2, originZoom - 1));
+        const r = this.options.radius / (this.options.extent * Math.pow(2, originZoom - 1)) * SCALE;
         const x = coords[originId * 2];
         const y = coords[originId * 2 + 1];
         const ids = tree.within(x, y, r);
@@ -278,8 +297,8 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         const z2 = Math.pow(2, z);
         const {extent, radius} = this.options;
         const p = radius / extent;
-        const top = (y - p) / z2;
-        const bottom = (y + 1 + p) / z2;
+        const top = encode((y - p) / z2);
+        const bottom = encode((y + 1 + p) / z2);
 
         const tile: GeoJSONVTTile = {
             transformed: true,
@@ -291,17 +310,17 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         };
 
         this.addTileFeatures(
-            tree.range((x - p) / z2, top, (x + 1 + p) / z2, bottom),
+            tree.range(encode((x - p) / z2), top, encode((x + 1 + p) / z2), bottom),
             tree, x, y, z2, tile);
 
         if (x === 0) {
             this.addTileFeatures(
-                tree.range(1 - p / z2, top, 1, bottom),
+                tree.range(encode(1 - p / z2), top, encode(1), bottom),
                 tree, z2, y, z2, tile);
         }
         if (x === z2 - 1) {
             this.addTileFeatures(
-                tree.range(0, top, p / z2, bottom),
+                tree.range(encode(0), top, encode(p / z2), bottom),
                 tree, -1, y, z2, tile);
         }
 
@@ -344,8 +363,8 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         return skipped;
     }
 
-    private createTree(coords: Float64Array, data: Int32Array, numItems: number): KDBushWithData {
-        const tree = new KDBush(numItems, this.options.nodeSize, Float32Array) as unknown as KDBushWithData;
+    private createTree(coords: Int32Array, data: Int32Array, numItems: number): KDBushWithData {
+        const tree = new KDBush(numItems, this.options.nodeSize, Int32Array) as unknown as KDBushWithData;
         for (let i = 0; i < numItems; i++) tree.add(coords[i * 2], coords[i * 2 + 1]);
         tree.finish();
         tree.flatCoords = coords;
@@ -379,8 +398,8 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
             let py: number;
             if (isCluster) {
                 tags = getClusterProperties(data, k, this.clusterProps);
-                px = coords[i * 2];
-                py = coords[i * 2 + 1];
+                px = decode(coords[i * 2]);
+                py = decode(coords[i * 2 + 1]);
             } else {
                 const p = this.points[data[k + OFFSET_ID]];
                 tags = p.tags;
@@ -420,9 +439,9 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
      * Clusters the points of a tree on a zoom level, writing the result to `nextCoords` and `nextData`.
      * @returns the number of points and clusters written
      */
-    private cluster(tree: KDBushWithData, zoom: number, nextCoords: Float64Array, nextData: Int32Array): number {
+    private cluster(tree: KDBushWithData, zoom: number, nextCoords: Int32Array, nextData: Int32Array): number {
         const {radius, extent, reduce, minPoints, maxZoom} = this.options;
-        const r = radius / (extent * Math.pow(2, zoom));
+        const r = radius / (extent * Math.pow(2, zoom)) * SCALE;
         const notProcessed = maxZoom + 1;
         const coords = tree.flatCoords;
         const data = tree.flatData;
@@ -487,8 +506,8 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
                 }
 
                 data[i + OFFSET_PARENT] = id;
-                nextCoords[nextNumItems * 2] = wx / numPoints;
-                nextCoords[nextNumItems * 2 + 1] = wy / numPoints;
+                nextCoords[nextNumItems * 2] = Math.round(wx / numPoints);
+                nextCoords[nextNumItems * 2 + 1] = Math.round(wy / numPoints);
                 const next = nextNumItems * stride;
                 nextData[next + OFFSET_ZOOM] = notProcessed;
                 nextData[next + OFFSET_ID] = id;
@@ -542,23 +561,23 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     }
 }
 
-function getClusterFeature(coords: Float64Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[]): ClusterFeatureInternal {
+function getClusterFeature(coords: Int32Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[]): ClusterFeatureInternal {
     return {
         id: data[i + OFFSET_ID],
         type: 'Point',
         tags: getClusterProperties(data, i, clusterProps),
-        geometry: [coords[index * 2], coords[index * 2 + 1]]
+        geometry: [decode(coords[index * 2]), decode(coords[index * 2 + 1])]
     };
 }
 
-function getClusterGeoJSON(coords: Float64Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[]): ClusterFeature {
+function getClusterGeoJSON(coords: Int32Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[]): ClusterFeature {
     return {
         type: 'Feature',
         id: data[i + OFFSET_ID],
         properties: getClusterProperties(data, i, clusterProps),
         geometry: {
             type: 'Point',
-            coordinates: [unprojectX(coords[index * 2]), unprojectY(coords[index * 2 + 1])]
+            coordinates: [unprojectX(decode(coords[index * 2])), unprojectY(decode(coords[index * 2 + 1]))]
         }
     };
 }

@@ -1,6 +1,7 @@
 ## main
 ### ✨ Features and improvements
 - Reduce memory usage of clustering ([#223](https://github.com/maplibre/geojson-vt/pull/223)) (by [@birkskyum](https://github.com/birkskyum))
+- Store cluster coordinates as integers, which takes less memory and keeps positions more exactly. On dense data, which points end up in which cluster changes slightly ([#230](https://github.com/maplibre/geojson-vt/pull/230)) (by [@birkskyum](https://github.com/birkskyum))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
