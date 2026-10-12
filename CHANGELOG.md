@@ -1,5 +1,6 @@
 ## main
 ### ✨ Features and improvements
+- Cluster each position of a `MultiPoint` feature, which a clustered index left out before ([#231](https://github.com/maplibre/geojson-vt/pull/231)) (by [@birkskyum](https://github.com/birkskyum))
 - Reduce memory usage of clustering ([#223](https://github.com/maplibre/geojson-vt/pull/223)) (by [@birkskyum](https://github.com/birkskyum))
 - _...Add new stuff here..._
 

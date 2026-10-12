@@ -75,3 +75,19 @@ test('updateClusterOptions stops aggregating cluster properties when it removes 
 
     expect(index.getTile(0, 0, 0).features.map(f => (f.tags as {sum?: number}).sum)).toEqual([undefined, undefined]);
 });
+
+test('clusters each position of a MultiPoint feature when clustering is on', () => {
+    const multiPoint = {
+        type: 'Feature' as const,
+        id: 7,
+        properties: {name: 'multi'},
+        geometry: {type: 'MultiPoint' as const, coordinates: [[20, 20], [20.0001, 20], [60, 20]]}
+    };
+
+    const index = new GeoJSONVT(multiPoint, {cluster: true});
+
+    expect(index.getTile(0, 0, 0).features).toEqual([
+        {type: 1, geometry: [[284, 227]], tags: {cluster: true, cluster_id: 20, point_count: 2, point_count_abbreviated: 2}, id: 20},
+        {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
+    ]);
+});
