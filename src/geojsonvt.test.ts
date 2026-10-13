@@ -260,3 +260,15 @@ test('clusters each position of a MultiPoint feature when clustering is on', () 
         {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
     ]);
 });
+
+test('worldCoordinates leaves the positions of a MultiPoint outside the world out of the clusters', () => {
+    const multiPoint = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {type: 'MultiPoint' as const, coordinates: [[0.99, 0.5], [1.03, 0.5], [0.5, -0.03]]}
+    };
+
+    const index = new GeoJSONVT(multiPoint, {worldCoordinates: true, cluster: true});
+
+    expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
+});

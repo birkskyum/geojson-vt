@@ -278,3 +278,12 @@ test('clusters each position of a MultiPoint feature', () => {
         {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
     ]);
 });
+
+test('leaves the positions of a MultiPoint outside the world out of load with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    index.load([
+        {type: 'Feature', properties: {name: 'multi'}, geometry: {type: 'MultiPoint', coordinates: [[0.99, 0.5], [1.03, 0.5]]}}
+    ]);
+
+    expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
+});
