@@ -1,12 +1,13 @@
+import {lngLatSpace, type CoordinateSpace} from './coordinate-space';
 import type {GeoJSONVTInternalFeature} from './definitions';
 
 /**
  * Converts internal source features back to GeoJSON format.
  */
-export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], worldCoordinates = false): GeoJSON.GeoJSON {
+export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], space: CoordinateSpace = lngLatSpace): GeoJSON.GeoJSON {
     const geojson: GeoJSON.GeoJSON = {
         type: 'FeatureCollection',
-        features: source.map(feature => featureToGeoJSON(feature, worldCoordinates))
+        features: source.map(feature => featureToGeoJSON(feature, space))
     };
 
     return geojson;
@@ -15,10 +16,10 @@ export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], worldCoordi
 /**
  * Converts a single internal feature to GeoJSON format.
  */
-export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, worldCoordinates = false): GeoJSON.Feature {
+export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, space: CoordinateSpace = lngLatSpace): GeoJSON.Feature {
     const geojsonFeature: GeoJSON.Feature = {
         type: 'Feature',
-        geometry: geometryToGeoJSON(feature, worldCoordinates),
+        geometry: geometryToGeoJSON(feature, space),
         properties: feature.tags
     };
     if (feature.id != null) {
@@ -31,68 +32,51 @@ export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, worldCoordin
 /**
  * Converts a single internal feature geometry to GeoJSON format.
  */
-function geometryToGeoJSON(feature: GeoJSONVTInternalFeature, worldCoordinates: boolean): GeoJSON.Geometry {
+function geometryToGeoJSON(feature: GeoJSONVTInternalFeature, space: CoordinateSpace): GeoJSON.Geometry {
     const {type, geometry} = feature;
 
     switch (type) {
         case 'Point':
             return {
                 type: type,
-                coordinates: unprojectPoint(geometry[0], geometry[1], worldCoordinates)
+                coordinates: unprojectPoint(geometry[0], geometry[1], space)
             };
         case 'MultiPoint':
             return {
                 type: type,
-                coordinates: unprojectPoints(geometry, worldCoordinates)
+                coordinates: unprojectPoints(geometry, space)
             };
         case 'LineString':
             return {
                 type: type,
-                coordinates: unprojectPoints(geometry.points, worldCoordinates)
+                coordinates: unprojectPoints(geometry.points, space)
             };
         case 'MultiLineString':
         case 'Polygon':
             return {
                 type: type,
-                coordinates: geometry.map(ring => unprojectPoints(ring.points, worldCoordinates))
+                coordinates: geometry.map(ring => unprojectPoints(ring.points, space))
             };
         case 'MultiPolygon':
             return {
                 type: type,
                 coordinates: geometry.map(polygon =>
-                    polygon.map(ring => unprojectPoints(ring.points, worldCoordinates))
+                    polygon.map(ring => unprojectPoints(ring.points, space))
                 )
             };
     }
 }
 
-export function unprojectPoints(coords: number[] | Float64Array, worldCoordinates = false): GeoJSON.Position[] {
+export function unprojectPoints(coords: number[] | Float64Array, space: CoordinateSpace = lngLatSpace): GeoJSON.Position[] {
     const result: GeoJSON.Position[] = [];
 
     for (let i = 0; i < coords.length; i += 3) {
-        result.push(unprojectPoint(coords[i], coords[i + 1], worldCoordinates));
+        result.push(unprojectPoint(coords[i], coords[i + 1], space));
     }
 
     return result;
 }
 
-function unprojectPoint(x: number, y: number, worldCoordinates: boolean): GeoJSON.Position {
-    return [unprojectX(x, worldCoordinates), unprojectY(y, worldCoordinates)];
-}
-
-/**
- * Convert spherical mercator in [0..1] range to longitude, or keep a world coordinate as it is
- */
-export function unprojectX(x: number, worldCoordinates = false): number {
-    if (worldCoordinates) return x;
-    return (x - 0.5) * 360;
-}
-
-/**
- * Convert spherical mercator in [0..1] range to latitude, or keep a world coordinate as it is
- */
-export function unprojectY(y: number, worldCoordinates = false): number {
-    if (worldCoordinates) return y;
-    const y2 = (180 - y * 360) * Math.PI / 180;
-    return 360 * Math.atan(Math.exp(y2)) / Math.PI - 90;
+function unprojectPoint(x: number, y: number, space: CoordinateSpace): GeoJSON.Position {
+    return [space.unprojectX(x), space.unprojectY(y)];
 }
