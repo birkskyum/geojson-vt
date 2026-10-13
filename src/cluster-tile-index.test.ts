@@ -263,6 +263,22 @@ test('limits minZoom and maxZoom to 30, the highest zoom level a cluster id can 
     expect(index.getClusterExpansionZoom(clusterId)).toBe(31);
 });
 
+test('clusters each position of a MultiPoint feature', () => {
+    const multiPoint: GeoJSON.Feature<GeoJSON.MultiPoint> = {
+        type: 'Feature',
+        id: 7,
+        properties: {name: 'multi'},
+        geometry: {type: 'MultiPoint', coordinates: [[20, 20], [20.0001, 20], [60, 20]]}
+    };
+    const index = new ClusterTileIndex();
+    index.load([multiPoint]);
+
+    expect(index.getTile(0, 0, 0).features).toEqual([
+        {type: 1, geometry: [[284, 227]], tags: {cluster: true, cluster_id: 20, point_count: 2, point_count_abbreviated: 2}, id: 20},
+        {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
+    ]);
+});
+
 test('does not cluster points that are farther apart than the radius on a high zoom level', () => {
     const index = new ClusterTileIndex({
         maxZoom: 20,

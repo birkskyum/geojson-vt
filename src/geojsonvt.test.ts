@@ -244,3 +244,31 @@ test('keeps the part of a line that enters a tile exactly at a vertex', () => {
     expect(feature.geometry).toEqual([[[0, 3631], [2048, 3631]]]);
     expect(feature.tags).toEqual({geojsonvt_clip_start: 0.5, geojsonvt_clip_end: 1});
 });
+
+test('clusters each position of a MultiPoint feature when clustering is on', () => {
+    const multiPoint = {
+        type: 'Feature' as const,
+        id: 7,
+        properties: {name: 'multi'},
+        geometry: {type: 'MultiPoint' as const, coordinates: [[20, 20], [20.0001, 20], [60, 20]]}
+    };
+
+    const index = new GeoJSONVT(multiPoint, {cluster: true});
+
+    expect(index.getTile(0, 0, 0).features).toEqual([
+        {type: 1, geometry: [[284, 227]], tags: {cluster: true, cluster_id: 20, point_count: 2, point_count_abbreviated: 2}, id: 20},
+        {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
+    ]);
+});
+
+test('worldCoordinates leaves the positions of a MultiPoint outside the world out of the clusters', () => {
+    const multiPoint = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {type: 'MultiPoint' as const, coordinates: [[0.99, 0.5], [1.03, 0.5], [0.5, -0.03]]}
+    };
+
+    const index = new GeoJSONVT(multiPoint, {worldCoordinates: true, cluster: true});
+
+    expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
+});
