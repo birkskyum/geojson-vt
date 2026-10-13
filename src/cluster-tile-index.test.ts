@@ -293,11 +293,14 @@ test('leaves out a point more than two worlds away or without a longitude or a l
 
 test('returns a cluster within a step of the mean of its points with worldCoordinates', () => {
     const index = new ClusterTileIndex({}, true);
-    const point: GeoJSON.Feature<GeoJSON.Point> = {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.3, 0.7]}};
-    index.load([point, point]);
+    index.load([
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.56, 0.4]}}
+    ]);
 
     const [x, y] = index.getClusters([0, 0, 1, 1], 0)[0].geometry.coordinates;
 
-    expect(x).toBeCloseTo(0.3, 9);
-    expect(y).toBeCloseTo(0.7, 9);
+    expect(x).toBeCloseTo(0.5466666667, 9);
+    expect(y).toBeCloseTo(0.4133333333, 9);
 });
