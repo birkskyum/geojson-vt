@@ -23,7 +23,7 @@ export class TileIndex implements GeoJSONVTTileIndex {
 
     initialize(features: GeoJSONVTInternalFeature[]): void {
         // start slicing from the top tile down
-        this.splitTile(features, 0, 0, 0);
+        this.splitTile(this.clipToWorld(features), 0, 0, 0);
 
         if (this.options.debug) {
             if (features.length) console.log('features: %d, points: %d', this.tiles[0].numFeatures, this.tiles[0].numPoints);
@@ -45,8 +45,9 @@ export class TileIndex implements GeoJSONVTTileIndex {
 
         // re-generate root tile with updated feature set
         const [z, x, y] = [0, 0, 0];
-        const rootTile = createTile(source, z, x, y, options);
-        rootTile.source = source;
+        const rootSource = this.clipToWorld(source);
+        const rootTile = createTile(rootSource, z, x, y, options);
+        rootTile.source = rootSource;
 
         // update tile index with new root tile - ready for getTile calls
         const id = toID(z, x, y);
@@ -83,6 +84,7 @@ export class TileIndex implements GeoJSONVTTileIndex {
         const {extent, debug} = this.options;
         
         const z2 = 1 << z;
+        if (this.options.worldCoordinates && (x < 0 || x >= z2)) return null; // a row outside the world has no tile either
         x = (x + z2) & (z2 - 1); // wrap tile x coordinate
 
         const id = toID(z, x, y);
@@ -117,6 +119,18 @@ export class TileIndex implements GeoJSONVTTileIndex {
         if (!this.tiles[id]) return null;
 
         return transformTile(this.tiles[id], extent);
+    }
+
+    /**
+     * The features the top tile starts from: all of them in a wrapping world, where wrapping already put them inside,
+     * and only what lies inside the world square and its buffer with `worldCoordinates`. The index keeps the rest, so
+     * an update can still move a feature in from outside.
+     */
+    private clipToWorld(features: GeoJSONVTInternalFeature[]): GeoJSONVTInternalFeature[] {
+        if (!this.options.worldCoordinates) return features;
+        const buffer = this.options.buffer / this.options.extent;
+        const inX = clip(features, 1, -buffer, 1 + buffer, AxisType.X, -Infinity, Infinity, this.options) || [];
+        return clip(inX, 1, -buffer, 1 + buffer, AxisType.Y, -Infinity, Infinity, this.options) || [];
     }
 
     /**
