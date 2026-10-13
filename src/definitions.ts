@@ -65,7 +65,7 @@ export type GeoJSONVTOptions = {
     worldCoordinates?: boolean;
     /**
      * Enable Supercluster for point features. Each position of a MultiPoint feature is clustered as a point of its own.
-     * Other features are left out.
+     * Other geometry types are left out.
      * @default false
      */
     cluster?: boolean;
