@@ -149,6 +149,10 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         this.initialize(features);
     }
 
+    /**
+     * Builds a tree per zoom level from the points. A point whose position is not a number is left out, since an
+     * integer cannot hold it.
+     */
     private createIndex(points: GeoJSONVTInternalPointFeature[]): void {
         const {log, minZoom, maxZoom} = this.options;
 
@@ -174,7 +178,6 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
-            // a point without a position is left out, an integer cannot hold "not a number"
             if (!p?.geometry || Number.isNaN(p.geometry[0]) || Number.isNaN(p.geometry[1])) continue;
 
             // store internal point/cluster data in flat numeric arrays for performance
