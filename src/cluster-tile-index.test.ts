@@ -278,3 +278,31 @@ test('clusters each position of a MultiPoint feature', () => {
         {type: 1, geometry: [[341, 227]], tags: {name: 'multi'}, id: 7}
     ]);
 });
+
+test('does not cluster points that are farther apart than the radius on a high zoom level', () => {
+    const index = new ClusterTileIndex({
+        maxZoom: 20,
+        extent: 8192,
+        radius: 16
+    });
+    index.load([
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426798, 53.943034]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [-1.426796, 53.943034]}}
+    ]);
+
+    expect(index.getClusters([-180, -90, 180, 90], 20)).toHaveLength(2);
+});
+
+test('returns a cluster within a step of the mean of its points with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    index.load([
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
+        {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.56, 0.4]}}
+    ]);
+
+    const [x, y] = index.getClusters([0, 0, 1, 1], 0)[0].geometry.coordinates;
+
+    expect(x).toBeCloseTo(0.5466666667, 9);
+    expect(y).toBeCloseTo(0.4133333333, 9);
+});
