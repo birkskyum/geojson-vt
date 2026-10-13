@@ -218,6 +218,38 @@ test('does not keep the cluster properties of an earlier load', () => {
     expect(index.clusterProps.length).toBe(count);
 });
 
+test('takes points and the getClusters bounding box in world coordinates with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    index.load([
+        {type: 'Feature', properties: {name: 'a'}, geometry: {type: 'Point', coordinates: [0.25, 0.25]}},
+        {type: 'Feature', properties: {name: 'b'}, geometry: {type: 'Point', coordinates: [0.75, 0.75]}}
+    ]);
+
+    expect(index.getClusters([0, 0, 0.5, 0.5], 0).map(f => f.geometry.coordinates)).toEqual([[0.25, 0.25]]);
+});
+
+test('leaves points outside the world out of load with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    index.load([
+        {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}},
+        {type: 'Feature', properties: {name: 'outside'}, geometry: {type: 'Point', coordinates: [1.03, 0.5]}}
+    ]);
+
+    expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
+});
+
+test('returns no tile outside the world with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    index.load([
+        {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [0.01, 0.5]}},
+        {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}},
+        {type: 'Feature', properties: {name: 'north'}, geometry: {type: 'Point', coordinates: [0.5, 0.01]}},
+        {type: 'Feature', properties: {name: 'south'}, geometry: {type: 'Point', coordinates: [0.5, 0.99]}}
+    ]);
+
+    expect([index.getTile(0, -1, 0), index.getTile(0, 1, 0), index.getTile(0, 0, -1), index.getTile(0, 0, 1)]).toEqual([null, null, null, null]);
+});
+
 test('limits minZoom and maxZoom to 30, the highest zoom level a cluster id can hold', () => {
     const index = new ClusterTileIndex({minZoom: 40, maxZoom: 40});
     const point: GeoJSON.Feature<GeoJSON.Point> = {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [10, 10]}};

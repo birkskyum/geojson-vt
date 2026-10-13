@@ -54,6 +54,16 @@ export type GeoJSONVTOptions = {
      */
     debug?: number;
     /**
+     * Whether positions are world coordinates instead of lng/lat: x and y from 0 to 1 across the world square, y growing
+     * downward, where web mercator would put a lng/lat. The world is then a square that ends at its edges, for data in a
+     * world of its own such as a map projection's: positions are neither projected nor wrapped around or clamped,
+     * features are cut at the tile buffer around the square, points outside it are left out of the clusters, `getTile`
+     * returns `null` outside it, and `getData` and the cluster methods return world coordinates too.
+     * @experimental
+     * @default false
+     */
+    worldCoordinates?: boolean;
+    /**
      * Enable Supercluster for point features.
      * @default false
      */
@@ -67,7 +77,7 @@ export type GeoJSONVTOptions = {
 
 export type GeoJSONToTileOptions = GeoJSONVTOptions & {
     /**
-     * Whether to wrap features around the antimeridian
+     * Whether to wrap features around the antimeridian. Has no effect with `worldCoordinates`.
      * @default false
      */
     wrap?: boolean;

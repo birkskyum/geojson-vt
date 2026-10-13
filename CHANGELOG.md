@@ -1,6 +1,7 @@
 ## main
 ### ✨ Features and improvements
 - Reduce memory usage of clustering ([#223](https://github.com/maplibre/geojson-vt/pull/223)) (by [@birkskyum](https://github.com/birkskyum))
+- Add a `worldCoordinates` option for positions given as x and y from 0 to 1 in a world square of its own, which neither wraps around nor clamps ([#224](https://github.com/maplibre/geojson-vt/pull/224)) (by [@johncarmack1984](https://github.com/johncarmack1984))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
