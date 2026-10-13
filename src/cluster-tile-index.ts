@@ -46,15 +46,27 @@ const MAX_ZOOM = 30;
 const SCALE = 0x40000000;
 
 /**
- * A projected coordinate as an integer. A coordinate more than two worlds from the center of the world is held at
- * the limit, since it does not fit.
+ * The largest value a 32-bit integer holds.
+ */
+const MAX_INTEGER = 0x7fffffff;
+
+/**
+ * A projected coordinate in steps from the center of the world, see `SCALE`.
  */
 function encode(coord: number): number {
-    return Math.max(-0x80000000, Math.min(0x7fffffff, Math.round((coord - 0.5) * SCALE)));
+    return (coord - 0.5) * SCALE;
 }
 
 function decode(value: number): number {
     return value / SCALE + 0.5;
+}
+
+/**
+ * Whether a projected coordinate fits in a 32-bit integer. One that is more than two worlds from the center of the
+ * world does not, and neither does one that is not a number.
+ */
+function fitsInteger(coord: number): boolean {
+    return Math.abs(encode(coord)) < MAX_INTEGER;
 }
 
 const OFFSET_ZOOM = 0;
@@ -150,8 +162,8 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     }
 
     /**
-     * Builds a tree per zoom level from the points. A point whose position is not a number is left out, since an
-     * integer cannot hold it.
+     * Builds a tree per zoom level from the points. A point whose position does not fit in an integer is left out,
+     * see `fitsInteger`.
      */
     private createIndex(points: GeoJSONVTInternalPointFeature[]): void {
         const {log, minZoom, maxZoom} = this.options;
@@ -178,11 +190,11 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
 
         for (let i = 0; i < points.length; i++) {
             const p = points[i];
-            if (!p?.geometry || Number.isNaN(p.geometry[0]) || Number.isNaN(p.geometry[1])) continue;
+            if (!p?.geometry || !fitsInteger(p.geometry[0]) || !fitsInteger(p.geometry[1])) continue;
 
             // store internal point/cluster data in flat numeric arrays for performance
-            coords[numItems * 2] = encode(p.geometry[0]); // projected point coordinates
-            coords[numItems * 2 + 1] = encode(p.geometry[1]);
+            coords[numItems * 2] = Math.round(encode(p.geometry[0])); // projected point coordinates
+            coords[numItems * 2 + 1] = Math.round(encode(p.geometry[1]));
             const k = numItems * stride;
             data[k + OFFSET_ZOOM] = notProcessed; // the last zoom the point was processed at
             data[k + OFFSET_ID] = i; // index of the source feature in the original input array
