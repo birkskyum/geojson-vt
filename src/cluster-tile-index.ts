@@ -75,10 +75,11 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     }
 
     /**
-     * Loads GeoJSON point features and builds the internal clustering index.
-     * @param points - GeoJSON point features to cluster.
+     * Loads GeoJSON Point and MultiPoint features and builds the internal clustering index.
+     * Each position of a MultiPoint is clustered as a point of its own, with the id and properties of its feature.
+     * @param points - GeoJSON Point and MultiPoint features to cluster.
      */
-    load(points: GeoJSON.Feature<GeoJSON.Point>[]): void {
+    load(points: GeoJSON.Feature<GeoJSON.Point | GeoJSON.MultiPoint>[]): void {
         const features: GeoJSONVTInternalPointFeature[] = [];
         
         // Convert GeoJSON point features to GeoJSONVT internal point features
@@ -87,18 +88,20 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
                 continue;
             }
 
-            const [lng, lat] = point.geometry.coordinates;
-            const [x, y] = [projectX(lng, this.worldCoordinates), projectY(lat, this.worldCoordinates)];
-            if (this.worldCoordinates && !isInWorld([x, y])) continue;
-            
-            const feature: GeoJSONVTInternalPointFeature = {
-                id: point.id,
-                type: 'Point',
-                geometry: [x, y],
-                tags: point.properties
-            };
-            
-            features.push(feature);
+            const positions = point.geometry.type === 'MultiPoint' ? point.geometry.coordinates : [point.geometry.coordinates];
+            for (const [lng, lat] of positions) {
+                const [x, y] = [projectX(lng, this.worldCoordinates), projectY(lat, this.worldCoordinates)];
+                if (this.worldCoordinates && !isInWorld([x, y])) continue;
+
+                const feature: GeoJSONVTInternalPointFeature = {
+                    id: point.id,
+                    type: 'Point',
+                    geometry: [x, y],
+                    tags: point.properties
+                };
+
+                features.push(feature);
+            }
         }
         
         this.createIndex(features);
@@ -107,15 +110,25 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     /**
      * @internal
      * Loads internal GeoJSONVT point features from a data source and builds the clustering index.
+     * Each position of a MultiPoint feature becomes a point of its own, with the id and properties of its feature.
      * @param features - {@link GeoJSONVTInternalFeature} data source features to filter and cluster.
      */
     initialize(features: GeoJSONVTInternalFeature[]): void {
         const points: GeoJSONVTInternalPointFeature[] = [];
 
         for (const feature of features) {
-            if (feature.type !== 'Point') continue;
-            if (this.worldCoordinates && !isInWorld(feature.geometry)) continue;
-            points.push(feature);
+            if (feature.type === 'Point') {
+                if (this.worldCoordinates && !isInWorld(feature.geometry)) continue;
+                points.push(feature);
+                continue;
+            }
+            if (feature.type !== 'MultiPoint') continue;
+
+            for (let i = 0; i < feature.geometry.length; i += 3) {
+                const geometry = [feature.geometry[i], feature.geometry[i + 1]];
+                if (this.worldCoordinates && !isInWorld(geometry)) continue;
+                points.push({id: feature.id, type: 'Point', geometry, tags: feature.tags});
+            }
         }
 
         this.createIndex(points);
