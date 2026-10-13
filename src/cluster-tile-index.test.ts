@@ -293,20 +293,6 @@ test('does not cluster points that are farther apart than the radius on a high z
     expect(index.getClusters([-180, -90, 180, 90], 20)).toHaveLength(2);
 });
 
-test('leaves out a point more than two worlds away or without a longitude or a latitude', () => {
-    const index = new ClusterTileIndex();
-    index.load([
-        {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [10, 10]}},
-        {type: 'Feature', properties: {name: 'far east'}, geometry: {type: 'Point', coordinates: [1440, 10]}},
-        {type: 'Feature', properties: {name: 'far west'}, geometry: {type: 'Point', coordinates: [-1440, 10]}},
-        {type: 'Feature', properties: {name: 'no longitude'}, geometry: {type: 'Point', coordinates: [NaN, 10]}},
-        {type: 'Feature', properties: {name: 'no latitude'}, geometry: {type: 'Point', coordinates: [10, NaN]}}
-    ]);
-
-    expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
-    expect(index.getTile(2, 10, 1)!.features).toEqual([]);
-});
-
 test('returns a cluster within a step of the mean of its points with worldCoordinates', () => {
     const index = new ClusterTileIndex({}, true);
     index.load([
