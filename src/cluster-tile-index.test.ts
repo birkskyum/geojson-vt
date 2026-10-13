@@ -298,3 +298,14 @@ test('leaves out a point without a position', () => {
     expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
     expect(index.getClusters([-180, -90, 180, 90], 0)).toHaveLength(1);
 });
+
+test('returns a cluster within a step of the mean of its points with worldCoordinates', () => {
+    const index = new ClusterTileIndex({}, true);
+    const point: GeoJSON.Feature<GeoJSON.Point> = {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.3, 0.7]}};
+    index.load([point, point]);
+
+    const [x, y] = index.getClusters([0, 0, 1, 1], 0)[0].geometry.coordinates;
+
+    expect(x).toBeCloseTo(0.3, 9);
+    expect(y).toBeCloseTo(0.7, 9);
+});
