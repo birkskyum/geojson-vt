@@ -288,11 +288,12 @@ test('keeps a point far outside the world out of the tiles', () => {
     expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
 });
 
-test('leaves out a point without a position', () => {
+test('leaves out a point without a longitude or a latitude', () => {
     const index = new ClusterTileIndex();
     index.load([
         {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [10, 10]}},
-        {type: 'Feature', properties: {name: 'nowhere'}, geometry: {type: 'Point', coordinates: [NaN, NaN]}}
+        {type: 'Feature', properties: {name: 'no longitude'}, geometry: {type: 'Point', coordinates: [NaN, 10]}},
+        {type: 'Feature', properties: {name: 'no latitude'}, geometry: {type: 'Point', coordinates: [10, NaN]}}
     ]);
 
     expect(index.getTile(0, 0, 0)!.features.map(f => (f.tags as {name: string}).name)).toEqual(['inside']);
