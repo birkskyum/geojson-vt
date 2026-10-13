@@ -1,11 +1,11 @@
 ## main
 ### ✨ Features and improvements
-- Cluster each position of a `MultiPoint` feature, which a clustered index left out before ([#231](https://github.com/maplibre/geojson-vt/pull/231)) (by [@birkskyum](https://github.com/birkskyum))
 - Reduce memory usage of clustering ([#223](https://github.com/maplibre/geojson-vt/pull/223)) (by [@birkskyum](https://github.com/birkskyum))
 - Add a `worldCoordinates` option for positions given as x and y from 0 to 1 in a world square of its own, which neither wraps around nor clamps ([#224](https://github.com/maplibre/geojson-vt/pull/224)) (by [@johncarmack1984](https://github.com/johncarmack1984))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- Fix `MultiPoint` features missing from a clustered index, by clustering each of their positions as a point of its own ([#231](https://github.com/maplibre/geojson-vt/pull/231)) (by [@birkskyum](https://github.com/birkskyum))
 - Fix `updateData` changing the id of a feature when it updates its geometry, with `generateId` or when the promoted property changes too ([#233](https://github.com/maplibre/geojson-vt/pull/233)) (by [@birkskyum](https://github.com/birkskyum))
 - Fix a polygon or line losing parts in a tile when one of its vertices lies exactly on a tile edge ([#226](https://github.com/maplibre/geojson-vt/pull/226)) (by [@birkskyum](https://github.com/birkskyum))
 - Fix a `MultiPolygon` with an empty polygon throwing when the index is built ([#227](https://github.com/maplibre/geojson-vt/pull/227)) (by [@birkskyum](https://github.com/birkskyum))
