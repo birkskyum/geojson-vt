@@ -261,6 +261,24 @@ test('clusters each position of a MultiPoint feature when clustering is on', () 
     ]);
 });
 
+test('counts each point once in the clusters at the antimeridian', () => {
+    const data = {
+        type: 'FeatureCollection' as const,
+        features: [[179, 0], [178, 0], [-179, 0], [-178, 0]].map(coordinates => (
+            {type: 'Feature' as const, geometry: {type: 'Point' as const, coordinates}, properties: {}}
+        ))
+    };
+
+    const index = new GeoJSONVT(data, {cluster: true});
+
+    expect(index.getTile(0, 0, 0).features.map(feature => [feature.geometry, feature.tags.point_count])).toEqual([
+        [[[510, 256]], 2],
+        [[[2, 256]], 2],
+        [[[-2, 256]], 2],
+        [[[514, 256]], 2]
+    ]);
+});
+
 test('worldCoordinates leaves the positions of a MultiPoint outside the world out of the clusters', () => {
     const multiPoint = {
         type: 'Feature' as const,
