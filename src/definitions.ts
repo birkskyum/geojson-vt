@@ -83,10 +83,10 @@ export type GeoJSONVTOptions = {
      */
     cluster?: boolean;
     /**
-     * Options for the Supercluster point clustering algorithm.
+     * Options for the Supercluster point clustering algorithm. `coordinates` and `wrap` come from the options above.
      * @see {@link SuperclusterOptions}
      */
-    clusterOptions?: SuperclusterOptions;
+    clusterOptions?: Omit<SuperclusterOptions, 'coordinates' | 'wrap'>;
 };
 
 export type GeoJSONToTileOptions = GeoJSONVTOptions & {
