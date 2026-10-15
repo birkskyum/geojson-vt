@@ -30,6 +30,7 @@ export class GeoJSONVT {
     private options: GeoJSONVTOptions;
     
     private source?: GeoJSONVTInternalFeature[];
+    private unlocated?: Map<string | number, GeoJSON.Feature>;
     private tileIndex: GeoJSONVTTileIndex;
 
     constructor(data: GeoJSON.GeoJSON, options?: GeoJSONVTOptions) {
@@ -42,8 +43,11 @@ export class GeoJSONVT {
         if (options.maxZoom < 0 || options.maxZoom > 24) throw new Error('maxZoom should be in the 0-24 range');
         if (options.promoteId && options.generateId) throw new Error('promoteId and generateId cannot be used together.');
 
+        // for updateable indexes, keep the properties of the features without coordinates, so that an update can give them some
+        if (options.updateable) this.unlocated = new Map();
+
         // projects and adds simplification info
-        let features = convertToInternal(data, options);
+        let features = convertToInternal(data, options, this.unlocated);
 
         if (debug) {
             console.timeEnd('preprocess data');
@@ -95,7 +99,7 @@ export class GeoJSONVT {
         if (!options.updateable) throw new Error('to update tile geojson `updateable` option must be set to true');
 
         // apply diff and collect affected features and updated source that will be used to invalidate tiles
-        let {affected, source} = applySourceDiff(this.source, diff, options);
+        let {affected, source} = applySourceDiff(this.source, diff, options, this.unlocated);
 
         if (filter) {
             ({affected, source} = this.filterUpdate(source, affected, filter));
@@ -111,7 +115,9 @@ export class GeoJSONVT {
     }
 
     /**
-     * Filter an update using a predicate function. Returns the affected and updated source features.
+     * Filter an update using a predicate function, the features an update emptied included, so that one the filter
+     * rejects can't come back with a later update. A feature without a geometry at all isn't passed to the predicate.
+     * Returns the affected and updated source features.
      */
     private filterUpdate(source: GeoJSONVTInternalFeature[], affected: GeoJSONVTInternalFeature[], predicate: (feature: GeoJSON.Feature) => boolean) {
         const removeIds = new Set();
@@ -123,6 +129,10 @@ export class GeoJSONVT {
             removeIds.add(feature.id);
         }
         source = source.filter(feature => !removeIds.has(feature.id));
+
+        for (const [id, feature] of this.unlocated ?? []) {
+            if (feature.geometry && !predicate(feature)) this.unlocated.delete(id);
+        }
 
         return {affected, source};
     }
