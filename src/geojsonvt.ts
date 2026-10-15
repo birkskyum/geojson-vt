@@ -1,5 +1,6 @@
 import {convertToInternal} from './convert';
 import {convertToGeoJSON, featureToGeoJSON} from './deconvert';
+import {getWorldCoordinateHelper, type WorldCoordinateHelper} from './world-coordinate-helper';
 import {wrap} from './wrap';
 import {applySourceDiff, type GeoJSONVTSourceDiff} from './difference';
 import {ClusterTileIndex, defaultClusterOptions} from './cluster-tile-index';
@@ -28,6 +29,7 @@ export const defaultOptions: GeoJSONVTOptions = {
  */
 export class GeoJSONVT {
     private options: GeoJSONVTOptions;
+    private worldCoordinateHelper: WorldCoordinateHelper;
     
     private source?: GeoJSONVTInternalFeature[];
     private unlocated?: Map<string | number, GeoJSON.Feature>;
@@ -35,6 +37,7 @@ export class GeoJSONVT {
 
     constructor(data: GeoJSON.GeoJSON, options?: GeoJSONVTOptions) {
         options = this.options = Object.assign({}, defaultOptions, options);
+        this.worldCoordinateHelper = getWorldCoordinateHelper(options.worldCoordinates);
 
         const debug = options.debug;
 
@@ -124,7 +127,7 @@ export class GeoJSONVT {
 
         for (const feature of source) {
             if (feature.id == undefined) continue;
-            if (predicate(featureToGeoJSON(feature, this.options.worldCoordinates))) continue;
+            if (predicate(featureToGeoJSON(feature, this.worldCoordinateHelper))) continue;
             affected.push(feature);
             removeIds.add(feature.id);
         }
@@ -142,7 +145,7 @@ export class GeoJSONVT {
      */
     getData(): GeoJSON.GeoJSON {
         if (!this.options.updateable) throw new Error('to retrieve data the `updateable` option must be set to true');
-        return convertToGeoJSON(this.source, this.options.worldCoordinates);
+        return convertToGeoJSON(this.source, this.worldCoordinateHelper);
     }
     
     /**

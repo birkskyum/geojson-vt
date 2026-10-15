@@ -1,6 +1,6 @@
 import KDBush from 'kdbush';
-import {projectX, projectY} from './convert';
-import {unprojectX, unprojectY, featureToGeoJSON} from './deconvert';
+import {getWorldCoordinateHelper, type WorldCoordinateHelper} from './world-coordinate-helper';
+import {featureToGeoJSON} from './deconvert';
 import type {ClusterFeature, ClusterOrPointFeature, ClusterProperties, GeoJSONVTTileIndex, GeoJSONVTFeature, GeoJSONVTInternalFeature, GeoJSONVTInternalPointFeature, GeoJSONVTOptions, GeoJSONVTTile, SuperclusterOptions} from './definitions';
 
 type ClusterFeatureInternal = GeoJSONVTInternalPointFeature & {
@@ -94,10 +94,12 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
      * @experimental
      */
     worldCoordinates: boolean;
+    private worldCoordinateHelper: WorldCoordinateHelper;
 
     constructor(options?: SuperclusterOptions, worldCoordinates = false) {
         this.options = createOptions(options);
         this.worldCoordinates = worldCoordinates;
+        this.worldCoordinateHelper = getWorldCoordinateHelper(worldCoordinates);
         this.trees = new Array(this.options.maxZoom + 1);
         this.stride = this.options.reduce ? 5 : 4;
         this.clusterProps = [];
@@ -120,7 +122,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
 
             const positions = point.geometry.type === 'MultiPoint' ? point.geometry.coordinates : [point.geometry.coordinates];
             for (const [lng, lat] of positions) {
-                const [x, y] = [projectX(lng, this.worldCoordinates), projectY(lat, this.worldCoordinates)];
+                const [x, y] = [this.worldCoordinateHelper.projectX(lng), this.worldCoordinateHelper.projectY(lat)];
                 if (this.worldCoordinates && !isInWorld([x, y])) continue;
 
                 const feature: GeoJSONVTInternalPointFeature = {
@@ -247,7 +249,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
      */
     public getClusters(bbox: [number, number, number, number], zoom: number): ClusterOrPointFeature[] {
         const clusterInternal = this.worldCoordinates ? this.getClustersInRange(bbox, zoom) : this.getClustersInternal(bbox, zoom);
-        return clusterInternal.map((f) => featureToGeoJSON(f, this.worldCoordinates) as ClusterOrPointFeature);
+        return clusterInternal.map((f) => featureToGeoJSON(f, this.worldCoordinateHelper) as ClusterOrPointFeature);
     }
 
     private getClustersInternal(bbox: [number, number, number, number], zoom: number): ClusterOrPointFeatureInternal[] {
@@ -265,7 +267,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
             return easternHem.concat(westernHem);
         }
 
-        return this.getClustersInRange([projectX(minLng), projectY(maxLat), projectX(maxLng), projectY(minLat)], zoom);
+        return this.getClustersInRange([this.worldCoordinateHelper.projectX(minLng), this.worldCoordinateHelper.projectY(maxLat), this.worldCoordinateHelper.projectX(maxLng), this.worldCoordinateHelper.projectY(minLat)], zoom);
     }
 
     /**
@@ -308,7 +310,7 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
         for (const id of ids) {
             const k = id * this.stride;
             if (data[k + OFFSET_PARENT] === clusterId) {
-                children.push(data[k + OFFSET_NUM] > 1 ? getClusterGeoJSON(coords, id, data, k, this.clusterProps, this.worldCoordinates) : featureToGeoJSON(this.points[data[k + OFFSET_ID]], this.worldCoordinates) as GeoJSON.Feature<GeoJSON.Point>);
+                children.push(data[k + OFFSET_NUM] > 1 ? getClusterGeoJSON(coords, id, data, k, this.clusterProps, this.worldCoordinateHelper) : featureToGeoJSON(this.points[data[k + OFFSET_ID]], this.worldCoordinateHelper) as GeoJSON.Feature<GeoJSON.Point>);
             }
         }
 
@@ -628,14 +630,14 @@ function getClusterFeature(coords: Int32Array, index: number, data: Int32Array, 
     };
 }
 
-function getClusterGeoJSON(coords: Int32Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[], worldCoordinates: boolean): ClusterFeature {
+function getClusterGeoJSON(coords: Int32Array, index: number, data: Int32Array, i: number, clusterProps: Record<string, unknown>[], worldCoordinateHelper: WorldCoordinateHelper): ClusterFeature {
     return {
         type: 'Feature',
         id: data[i + OFFSET_ID],
         properties: getClusterProperties(data, i, clusterProps),
         geometry: {
             type: 'Point',
-            coordinates: [unprojectX(decode(coords[index * 2]), worldCoordinates), unprojectY(decode(coords[index * 2 + 1]), worldCoordinates)]
+            coordinates: [worldCoordinateHelper.unprojectX(decode(coords[index * 2])), worldCoordinateHelper.unprojectY(decode(coords[index * 2 + 1]))]
         }
     };
 }
