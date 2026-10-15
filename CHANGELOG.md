@@ -1,6 +1,6 @@
 ## main
 ### ✨ Features and improvements
-- Replace the experimental `worldCoordinates` option with two experimental options, `coordinates`, for positions in lng/lat or in the unit square, and `wrap`, for whether the world wraps around the antimeridian ([#241](https://github.com/maplibre/geojson-vt/pull/241)) (by [@birkskyum](https://github.com/birkskyum))
+- Replace the experimental `worldCoordinates` option with two experimental options, `coordinates`, for positions in lng/lat or in the unit square, and `wrap`, for whether the world wraps around the antimeridian. `worldCoordinates: true` becomes `coordinates: 'unitSquare', wrap: false`, and `Supercluster` takes both in its options instead of its second constructor argument and its `worldCoordinates` field ([#241](https://github.com/maplibre/geojson-vt/pull/241)) (by [@birkskyum](https://github.com/birkskyum))
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
