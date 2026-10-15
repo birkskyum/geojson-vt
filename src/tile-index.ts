@@ -84,7 +84,7 @@ export class TileIndex implements GeoJSONVTTileIndex {
         const {extent, debug} = this.options;
         
         const z2 = 1 << z;
-        if (this.options.worldCoordinates && (x < 0 || x >= z2)) return null; // a row outside the world has no tile either
+        if (!this.options.wrap && (x < 0 || x >= z2)) return null; // a row outside the world has no tile either
         x = (x + z2) & (z2 - 1); // wrap tile x coordinate
 
         const id = toID(z, x, y);
@@ -123,11 +123,11 @@ export class TileIndex implements GeoJSONVTTileIndex {
 
     /**
      * The features the top tile starts from: all of them in a wrapping world, where wrapping already put them inside,
-     * and only what lies inside the world square and its buffer with `worldCoordinates`. The index keeps the rest, so
+     * and only what lies inside the world square and its buffer without `wrap`. The index keeps the rest, so
      * an update can still move a feature in from outside.
      */
     private clipToWorld(features: GeoJSONVTInternalFeature[]): GeoJSONVTInternalFeature[] {
-        if (!this.options.worldCoordinates) return features;
+        if (this.options.wrap) return features;
         const buffer = this.options.buffer / this.options.extent;
         const inX = clip(features, 1, -buffer, 1 + buffer, AxisType.X, -Infinity, Infinity, this.options) || [];
         return clip(inX, 1, -buffer, 1 + buffer, AxisType.Y, -Infinity, Infinity, this.options) || [];

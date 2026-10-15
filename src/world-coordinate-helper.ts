@@ -1,3 +1,5 @@
+import type {GeoJSONVTCoordinates} from './definitions';
+
 /**
  * How the positions of the input relate to the world square the tiles cover, in which x and y run from 0 to 1.
  */
@@ -33,7 +35,7 @@ class MercatorWorldCoordinateHelper implements WorldCoordinateHelper {
 }
 
 /**
- * Positions that are world coordinates already, see `worldCoordinates` in {@link GeoJSONVTOptions}.
+ * Positions in the unit square already, see `coordinates` in {@link GeoJSONVTOptions}.
  */
 class IdentityWorldCoordinateHelper implements WorldCoordinateHelper {
     projectX(x: number): number {
@@ -56,6 +58,6 @@ class IdentityWorldCoordinateHelper implements WorldCoordinateHelper {
 export const mercatorWorldCoordinateHelper: WorldCoordinateHelper = new MercatorWorldCoordinateHelper();
 const identityWorldCoordinateHelper: WorldCoordinateHelper = new IdentityWorldCoordinateHelper();
 
-export function getWorldCoordinateHelper(worldCoordinates?: boolean): WorldCoordinateHelper {
-    return worldCoordinates ? identityWorldCoordinateHelper : mercatorWorldCoordinateHelper;
+export function getWorldCoordinateHelper(coordinates?: GeoJSONVTCoordinates): WorldCoordinateHelper {
+    return coordinates === 'unitSquare' ? identityWorldCoordinateHelper : mercatorWorldCoordinateHelper;
 }

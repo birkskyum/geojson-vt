@@ -63,7 +63,7 @@ function featureToInternal(features: GeoJSONVTInternalFeature[], geojson: GeoJSO
 
     const id = getFeatureId(geojson, options, index);
     const tolerance = Math.pow(options.tolerance / ((1 << options.maxZoom) * options.extent), 2);
-    const worldCoordinateHelper = getWorldCoordinateHelper(options.worldCoordinates);
+    const worldCoordinateHelper = getWorldCoordinateHelper(options.coordinates);
 
     switch (geojson.geometry.type) {
         case 'Point':

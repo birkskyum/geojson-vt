@@ -4,7 +4,7 @@ import type { GeoJSONVTInternalFeature, GeoJSONVTOptions, SliceArray, SliceFixed
 import {createFeature, optimizeLineMemory} from './feature';
 
 export function wrap(features: GeoJSONVTInternalFeature[], options: GeoJSONVTOptions): GeoJSONVTInternalFeature[] {
-    if (options.worldCoordinates) return features;
+    if (!options.wrap) return features;
 
     const buffer = options.buffer / options.extent;
     let merged = features;

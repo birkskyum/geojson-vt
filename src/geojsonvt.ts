@@ -21,7 +21,8 @@ export const defaultOptions: GeoJSONVTOptions = {
     cluster: false,
     clusterOptions: defaultClusterOptions,
     debug: 0,
-    worldCoordinates: false
+    coordinates: 'lngLat',
+    wrap: true
 };
 
 /**
@@ -37,7 +38,7 @@ export class GeoJSONVT {
 
     constructor(data: GeoJSON.GeoJSON, options?: GeoJSONVTOptions) {
         options = this.options = Object.assign({}, defaultOptions, options);
-        this.worldCoordinateHelper = getWorldCoordinateHelper(options.worldCoordinates);
+        this.worldCoordinateHelper = getWorldCoordinateHelper(options.coordinates);
 
         const debug = options.debug;
 
@@ -70,7 +71,7 @@ export class GeoJSONVT {
     }
 
     private initializeIndex(features: GeoJSONVTInternalFeature[], options: GeoJSONVTOptions) {
-        this.tileIndex = options.cluster ? new ClusterTileIndex(options.clusterOptions, options.worldCoordinates) : new TileIndex(options);
+        this.tileIndex = options.cluster ? new ClusterTileIndex({...options.clusterOptions, coordinates: options.coordinates, wrap: options.wrap}) : new TileIndex(options);
         if (!features.length) return;
         this.tileIndex.initialize(features);
     }

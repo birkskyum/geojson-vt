@@ -1,3 +1,8 @@
+/**
+ * The space positions are given in, see `coordinates` in {@link GeoJSONVTOptions}.
+ */
+export type GeoJSONVTCoordinates = 'lngLat' | 'unitSquare';
+
 export type GeoJSONVTOptions = {
     /**
      * Max zoom to preserve detail on
@@ -54,15 +59,23 @@ export type GeoJSONVTOptions = {
      */
     debug?: number;
     /**
-     * Whether positions are world coordinates instead of lng/lat: x and y from 0 to 1 across the world square, y growing
-     * downward, where web mercator would put a lng/lat. The world is then a square that ends at its edges, for data in a
-     * world of its own such as a map projection's: positions are neither projected nor wrapped around or clamped,
-     * features are cut at the tile buffer around the square, points outside it are left out of the clusters, `getTile`
-     * returns `null` outside it, and `getData` and the cluster methods return world coordinates too.
+     * The space the positions are in. `'lngLat'` is longitude and latitude, which web mercator puts in the square from 0
+     * to 1 that tile 0/0/0 covers, with latitudes beyond ~85.05 degrees clamped onto its top and bottom. `'unitSquare'`
+     * is x and y in that square already, y growing downward, taken as they are, for data in another projection.
+     * `getData` and the cluster methods return positions in the same space.
      * @experimental
-     * @default false
+     * @default 'lngLat'
      */
-    worldCoordinates?: boolean;
+    coordinates?: GeoJSONVTCoordinates;
+    /**
+     * Whether the world wraps around the antimeridian. With `true`, features near the left or right edge are copied
+     * across it, and the tiles at either edge include what lies past it. With `false`, the world is the square and ends
+     * at its edges. Features are cut at the tile buffer around it, points outside it are left out of the clusters, and
+     * `getTile` returns `null` outside it. `geoJSONToTile` doesn't wrap unless this is `true`.
+     * @experimental
+     * @default true
+     */
+    wrap?: boolean;
     /**
      * Enable Supercluster for point features. Each position of a MultiPoint feature is clustered as a point of its own.
      * Other geometry types are left out.
@@ -77,11 +90,6 @@ export type GeoJSONVTOptions = {
 };
 
 export type GeoJSONToTileOptions = GeoJSONVTOptions & {
-    /**
-     * Whether to wrap features around the antimeridian. Has no effect with `worldCoordinates`.
-     * @default false
-     */
-    wrap?: boolean;
     /**
      * Whether to clip features to the tile boundary
      * @default false
@@ -275,4 +283,19 @@ export type SuperclusterOptions = {
      * @default props => props
      */
     map?: (props: GeoJSON.GeoJsonProperties) => Record<string, unknown>;
+    /**
+     * The space the points are in, see `coordinates` in {@link GeoJSONVTOptions}. The bounding box of `getClusters` is
+     * in the same space.
+     * @experimental
+     * @default 'lngLat'
+     */
+    coordinates?: GeoJSONVTCoordinates;
+    /**
+     * Whether the world wraps around the antimeridian, see `wrap` in {@link GeoJSONVTOptions}. With `false`, points
+     * outside the square are left out of the clusters, the tiles at an edge get no points from the opposite one, and
+     * `getTile` returns `null` outside the square.
+     * @experimental
+     * @default true
+     */
+    wrap?: boolean;
 };

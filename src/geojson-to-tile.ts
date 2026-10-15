@@ -40,8 +40,8 @@ import type {GeoJSONToTileOptions, GeoJSONVTTile} from './definitions';
  */
 
 export function geoJSONToTile(data: GeoJSON.GeoJSON, z: number, x: number, y: number, options: GeoJSONToTileOptions = {}): GeoJSONVTTile {
-    options = {...defaultOptions, ...options};
-    const {wrap: shouldWrap = false, clip: shouldClip = false} = options;
+    options = {...defaultOptions, wrap: false, ...options};
+    const {wrap: shouldWrap, clip: shouldClip = false} = options;
 
     let features = convertToInternal(data, options);
     if (shouldWrap) {

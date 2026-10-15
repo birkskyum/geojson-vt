@@ -38,25 +38,25 @@ test('publicly exposed cluster methods: return undefined when clustering is disa
     expect(index.getClusterLeaves(123, 10, 0)).toBeNull();
 });
 
-test('worldCoordinates cuts a line at the buffer around the world instead of wrapping or clamping it', () => {
+test('a unit square without wrap cuts a line at the buffer around the world instead of wrapping or clamping it', () => {
     const fromThreeWorldsNorthToEast = {type: 'LineString' as const, coordinates: [[0.25, -3], [0.75, 0.5], [1.25, 0.5]]};
 
-    const index = new GeoJSONVT(fromThreeWorldsNorthToEast, {worldCoordinates: true});
+    const index = new GeoJSONVT(fromThreeWorldsNorthToEast, {coordinates: 'unitSquare', wrap: false});
 
     expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[[2770, -64], [3072, 2048], [4160, 2048]]]]);
 });
 
-test('worldCoordinates cuts the top tile at the world again on update, so a feature can move in from outside', () => {
+test('a unit square without wrap cuts the top tile at the world again on update, so a feature can move in from outside', () => {
     const movingIn = {type: 'Feature' as const, id: 'moving in', geometry: {type: 'Point' as const, coordinates: [1.25, 0.5]}, properties: {}};
     const stayingOut = {type: 'Feature' as const, id: 'staying out', geometry: {type: 'Point' as const, coordinates: [1.5, 0.5]}, properties: {}};
-    const index = new GeoJSONVT({type: 'FeatureCollection', features: [movingIn, stayingOut]}, {worldCoordinates: true, updateable: true});
+    const index = new GeoJSONVT({type: 'FeatureCollection', features: [movingIn, stayingOut]}, {coordinates: 'unitSquare', wrap: false, updateable: true});
 
     index.updateData({update: [{id: 'moving in', newGeometry: {type: 'Point', coordinates: [0.5, 0.5]}}]});
 
     expect(index.getTile(0, 0, 0).features.map(feature => feature.id)).toEqual(['moving in']);
 });
 
-test('worldCoordinates returns the data in world coordinates', () => {
+test('a unit square without wrap returns the data in the unit square', () => {
     const features: GeoJSON.Feature[] = [
         {type: 'Feature', id: 'point', geometry: {type: 'Point', coordinates: [0.25, 0.75]}, properties: {}},
         {type: 'Feature', id: 'multi point', geometry: {type: 'MultiPoint', coordinates: [[0.25, 0.75], [0.5, 0.5]]}, properties: {}},
@@ -65,14 +65,14 @@ test('worldCoordinates returns the data in world coordinates', () => {
         {type: 'Feature', id: 'polygon', geometry: {type: 'Polygon', coordinates: [[[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.25]]]}, properties: {}},
         {type: 'Feature', id: 'multi polygon', geometry: {type: 'MultiPolygon', coordinates: [[[[0.25, 0.25], [0.75, 0.25], [0.75, 0.75], [0.25, 0.25]]]]}, properties: {}}
     ];
-    const index = new GeoJSONVT({type: 'FeatureCollection', features}, {worldCoordinates: true, updateable: true});
+    const index = new GeoJSONVT({type: 'FeatureCollection', features}, {coordinates: 'unitSquare', wrap: false, updateable: true});
 
     expect(index.getData()).toEqual({type: 'FeatureCollection', features});
 });
 
-test('worldCoordinates keeps a MultiLineString it splits for lineMetrics in world coordinates', () => {
+test('a unit square without wrap keeps a MultiLineString it splits for lineMetrics in the unit square', () => {
     const multiLine = {type: 'MultiLineString' as const, coordinates: [[[0.25, 0.75], [0.5, 0.5]], [[0.5, 0.25], [0.75, 0.25]]]};
-    const index = new GeoJSONVT(multiLine, {worldCoordinates: true, lineMetrics: true, updateable: true});
+    const index = new GeoJSONVT(multiLine, {coordinates: 'unitSquare', wrap: false, lineMetrics: true, updateable: true});
 
     expect(index.getData()).toEqual({type: 'FeatureCollection', features: [
         {type: 'Feature', geometry: {type: 'LineString', coordinates: [[0.25, 0.75], [0.5, 0.5]]}},
@@ -80,9 +80,9 @@ test('worldCoordinates keeps a MultiLineString it splits for lineMetrics in worl
     ]});
 });
 
-test('worldCoordinates hands the update filter features in world coordinates', () => {
+test('a unit square without wrap hands the update filter features in the unit square', () => {
     const point = {type: 'Feature' as const, id: 'p', geometry: {type: 'Point' as const, coordinates: [0.25, 0.75]}, properties: {}};
-    const index = new GeoJSONVT({type: 'FeatureCollection', features: [point]}, {worldCoordinates: true, updateable: true});
+    const index = new GeoJSONVT({type: 'FeatureCollection', features: [point]}, {coordinates: 'unitSquare', wrap: false, updateable: true});
     const filtered: GeoJSON.Geometry[] = [];
 
     index.updateData({add: [{...point, id: 'q'}]}, feature => {
@@ -93,7 +93,7 @@ test('worldCoordinates hands the update filter features in world coordinates', (
     expect(filtered).toContainEqual({type: 'Point', coordinates: [0.25, 0.75]});
 });
 
-test('worldCoordinates leaves points outside the world out of the clusters', () => {
+test('a unit square without wrap leaves points outside the world out of the clusters', () => {
     const data = {
         type: 'FeatureCollection' as const,
         features: [
@@ -103,12 +103,12 @@ test('worldCoordinates leaves points outside the world out of the clusters', () 
         ]
     };
 
-    const index = new GeoJSONVT(data, {worldCoordinates: true, cluster: true});
+    const index = new GeoJSONVT(data, {coordinates: 'unitSquare', wrap: false, cluster: true});
 
     expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
 });
 
-test('worldCoordinates keeps points at either edge out of the clustered tile at the other edge', () => {
+test('a unit square without wrap keeps points at either edge out of the clustered tile at the other edge', () => {
     const data = {
         type: 'FeatureCollection' as const,
         features: [
@@ -117,12 +117,12 @@ test('worldCoordinates keeps points at either edge out of the clustered tile at 
         ]
     };
 
-    const index = new GeoJSONVT(data, {worldCoordinates: true, cluster: true});
+    const index = new GeoJSONVT(data, {coordinates: 'unitSquare', wrap: false, cluster: true});
 
     expect(index.getTile(0, 0, 0).features).toHaveLength(2);
 });
 
-test('worldCoordinates returns cluster children and leaves in world coordinates', () => {
+test('a unit square without wrap returns cluster children and leaves in the unit square', () => {
     const points = {
         type: 'FeatureCollection' as const,
         features: Array.from({length: 20}, (_, i) => ({
@@ -131,7 +131,7 @@ test('worldCoordinates returns cluster children and leaves in world coordinates'
             properties: {name: `Point ${i}`}
         }))
     };
-    const index = new GeoJSONVT(points, {worldCoordinates: true, cluster: true, clusterOptions: {radius: 100}});
+    const index = new GeoJSONVT(points, {coordinates: 'unitSquare', wrap: false, cluster: true, clusterOptions: {radius: 100}});
     const cluster = index.getTile(0, 0, 0).features.find(f => (f.tags as {cluster?: boolean})?.cluster);
     const clusterId = (cluster.tags as {cluster_id: number}).cluster_id;
 
@@ -142,10 +142,34 @@ test('worldCoordinates returns cluster children and leaves in world coordinates'
     expect(leafPositions).toEqual(expect.arrayContaining(points.features.map(point => point.geometry.coordinates)));
 });
 
-test('worldCoordinates returns no tile for a column on either side of the world', () => {
+test('a unit square without wrap stays without wrap for clusters after updateData', () => {
+    const point = (id: string, x: number) => ({type: 'Feature' as const, id, properties: {}, geometry: {type: 'Point' as const, coordinates: [x, 0.5]}});
+    const index = new GeoJSONVT({type: 'FeatureCollection', features: [point('a', 0.01)]}, {coordinates: 'unitSquare', wrap: false, cluster: true, updateable: true});
+
+    index.updateData({add: [point('b', 0.99)]});
+
+    expect(index.getTile(1, -1, 0)).toBeNull();
+});
+
+test('wraps positions in the unit square around the antimeridian by default', () => {
+    const nearTheEastEdge = {type: 'Feature' as const, properties: {}, geometry: {type: 'Point' as const, coordinates: [0.999, 0.25]}};
+    const index = new GeoJSONVT(nearTheEastEdge, {coordinates: 'unitSquare'});
+
+    expect(index.getTile(1, 0, 0).features.map(feature => feature.geometry)).toEqual([[[-8, 2048]]]);
+});
+
+test('copies no lng/lat features across the antimeridian without wrap', () => {
+    const nearTheAntimeridian = {type: 'Feature' as const, properties: {}, geometry: {type: 'Point' as const, coordinates: [179.9, -10]}};
+    const index = new GeoJSONVT(nearTheAntimeridian, {wrap: false});
+
+    expect(index.getTile(1, 0, 1)?.features ?? []).toEqual([]);
+    expect(index.getTile(1, 1, 1).features).toHaveLength(1);
+});
+
+test('a unit square without wrap returns no tile for a column on either side of the world', () => {
     const inTheTwoTopTiles = {type: 'MultiPoint' as const, coordinates: [[0.25, 0.25], [0.75, 0.25]]};
 
-    const index = new GeoJSONVT(inTheTwoTopTiles, {worldCoordinates: true});
+    const index = new GeoJSONVT(inTheTwoTopTiles, {coordinates: 'unitSquare', wrap: false});
 
     expect([index.getTile(1, -1, 0), index.getTile(1, 2, 0)]).toEqual([null, null]);
 });
@@ -363,14 +387,14 @@ test('clusters each position of a MultiPoint feature when clustering is on', () 
     ]);
 });
 
-test('worldCoordinates leaves the positions of a MultiPoint outside the world out of the clusters', () => {
+test('a unit square without wrap leaves the positions of a MultiPoint outside the world out of the clusters', () => {
     const multiPoint = {
         type: 'Feature' as const,
         properties: {},
         geometry: {type: 'MultiPoint' as const, coordinates: [[0.99, 0.5], [1.03, 0.5], [0.5, -0.03]]}
     };
 
-    const index = new GeoJSONVT(multiPoint, {worldCoordinates: true, cluster: true});
+    const index = new GeoJSONVT(multiPoint, {coordinates: 'unitSquare', wrap: false, cluster: true});
 
     expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
 });
