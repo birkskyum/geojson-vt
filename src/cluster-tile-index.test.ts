@@ -306,3 +306,23 @@ test('returns a cluster within a step of the mean of its points in a unit square
     expect(x).toBeCloseTo(0.5466666667, 9);
     expect(y).toBeCloseTo(0.4133333333, 9);
 });
+
+test('getClusters keeps only the part of a box inside a world that does not wrap', () => {
+    const index = new ClusterTileIndex({wrap: false});
+    index.load([
+        {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [-175, 0]}},
+        {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [175, 0]}}
+    ]);
+
+    expect(index.getClusters([170, -20, 190, 20], 17).map(f => f.properties.name)).toEqual(['east']);
+});
+
+test('getClusters repeats a box across the edge of a unit square that wraps', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: true});
+    index.load([
+        {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [0.01, 0.5]}},
+        {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}}
+    ]);
+
+    expect(index.getClusters([0.95, 0, 1.05, 1], 17).map(f => f.properties.name).sort()).toEqual(['east', 'west']);
+});

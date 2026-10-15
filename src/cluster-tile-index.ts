@@ -239,11 +239,41 @@ export class ClusterTileIndex implements GeoJSONVTTileIndex {
     /**
      * Returns clusters and/or points within a bounding box at a given zoom level.
      * @param bbox - Bounding box in `[westLng, southLat, eastLng, northLat]` order, or `[minX, minY, maxX, maxY]` in the unit square with `coordinates: 'unitSquare'`.
+     * In a world that wraps, the box can reach across the antimeridian. In one that doesn't, only its part inside the world counts.
      * @param zoom - Zoom level to query.
      */
     public getClusters(bbox: [number, number, number, number], zoom: number): ClusterOrPointFeature[] {
-        const clusterInternal = this.options.coordinates === 'unitSquare' ? this.getClustersInRange(bbox, zoom) : this.getClustersInternal(bbox, zoom);
+        const clusterInternal =
+            !this.options.wrap ? this.getClustersInWorld(bbox, zoom) :
+                this.options.coordinates === 'unitSquare' ? this.getClustersAcrossEdge(bbox, zoom) :
+                    this.getClustersInternal(bbox, zoom);
         return clusterInternal.map((f) => featureToGeoJSON(f, this.worldCoordinateHelper) as ClusterOrPointFeature);
+    }
+
+    /**
+     * The clusters and points in the part of a box inside a world that ends at its edges.
+     */
+    private getClustersInWorld(bbox: [number, number, number, number], zoom: number): ClusterOrPointFeatureInternal[] {
+        const lngLat = this.options.coordinates !== 'unitSquare';
+        const y1 = this.worldCoordinateHelper.projectY(lngLat ? Math.max(-90, Math.min(90, bbox[1])) : bbox[1]);
+        const y2 = this.worldCoordinateHelper.projectY(lngLat ? Math.max(-90, Math.min(90, bbox[3])) : bbox[3]);
+        const minX = Math.max(0, this.worldCoordinateHelper.projectX(bbox[0]));
+        const maxX = Math.min(1, this.worldCoordinateHelper.projectX(bbox[2]));
+        if (minX > maxX) return [];
+        return this.getClustersInRange([minX, Math.min(y1, y2), maxX, Math.max(y1, y2)], zoom);
+    }
+
+    /**
+     * The clusters and points in a box of a unit square that wraps, where the box can reach across its left or right edge.
+     */
+    private getClustersAcrossEdge([minX, minY, maxX, maxY]: [number, number, number, number], zoom: number): ClusterOrPointFeatureInternal[] {
+        if (maxX < minX) maxX += 1;
+        if (maxX - minX >= 1) return this.getClustersInRange([0, minY, 1, maxY], zoom);
+        const shift = Math.floor(minX);
+        const west = minX - shift;
+        const east = maxX - shift;
+        if (east <= 1) return this.getClustersInRange([west, minY, east, maxY], zoom);
+        return this.getClustersInRange([west, minY, 1, maxY], zoom).concat(this.getClustersInRange([0, minY, east - 1, maxY], zoom));
     }
 
     private getClustersInternal(bbox: [number, number, number, number], zoom: number): ClusterOrPointFeatureInternal[] {
