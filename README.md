@@ -79,6 +79,8 @@ With `coordinates: 'unitSquare'`, positions are x and y from 0 to 1 across the s
 
 With `wrap: false`, the world is that square and ends at its edges. Nothing is copied across the antimeridian, features are cut at the tile buffer around the square, points outside it are left out of the clusters, and `getTile` returns `null` for tiles outside it. A map projection that is not repeated around the world, for example, uses `coordinates: 'unitSquare'` and `wrap: false`.
 
+`coordinates` and `wrap` are experimental, so they can still change in a minor release.
+
 GeoJSON-VT only operates on zoom levels up to 24.
 
 ### Update

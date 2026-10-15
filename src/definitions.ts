@@ -1,5 +1,6 @@
 /**
  * The space positions are given in, see `coordinates` in {@link GeoJSONVTOptions}.
+ * @experimental
  */
 export type GeoJSONVTCoordinatesType = 'lngLat' | 'unitSquare';
 
