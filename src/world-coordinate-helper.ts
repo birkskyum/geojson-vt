@@ -1,7 +1,7 @@
 /**
  * How the positions of the input relate to the world square the tiles cover, in which x and y run from 0 to 1.
  */
-export interface CoordinateSpace {
+export interface WorldCoordinateHelper {
     projectX(x: number): number;
     projectY(y: number): number;
     unprojectX(x: number): number;
@@ -11,7 +11,7 @@ export interface CoordinateSpace {
 /**
  * Longitude and latitude, which spherical mercator puts in the world square.
  */
-class LngLatSpace implements CoordinateSpace {
+class MercatorWorldCoordinateHelper implements WorldCoordinateHelper {
     projectX(lng: number): number {
         return lng / 360 + 0.5;
     }
@@ -35,7 +35,7 @@ class LngLatSpace implements CoordinateSpace {
 /**
  * Positions that are world coordinates already, see `worldCoordinates` in {@link GeoJSONVTOptions}.
  */
-class WorldSpace implements CoordinateSpace {
+class IdentityWorldCoordinateHelper implements WorldCoordinateHelper {
     projectX(x: number): number {
         return x;
     }
@@ -53,9 +53,9 @@ class WorldSpace implements CoordinateSpace {
     }
 }
 
-export const lngLatSpace: CoordinateSpace = new LngLatSpace();
-const worldSpace: CoordinateSpace = new WorldSpace();
+export const mercatorWorldCoordinateHelper: WorldCoordinateHelper = new MercatorWorldCoordinateHelper();
+const identityWorldCoordinateHelper: WorldCoordinateHelper = new IdentityWorldCoordinateHelper();
 
-export function getCoordinateSpace(worldCoordinates?: boolean): CoordinateSpace {
-    return worldCoordinates ? worldSpace : lngLatSpace;
+export function getWorldCoordinateHelper(worldCoordinates?: boolean): WorldCoordinateHelper {
+    return worldCoordinates ? identityWorldCoordinateHelper : mercatorWorldCoordinateHelper;
 }

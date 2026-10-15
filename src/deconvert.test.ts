@@ -1,7 +1,7 @@
 
 import {test, expect} from 'vitest';
 import {featureToGeoJSON} from './deconvert';
-import {lngLatSpace} from './coordinate-space';
+import {mercatorWorldCoordinateHelper} from './world-coordinate-helper';
 import type {GeoJSONVTInternalFeature} from './definitions';
 
 test('project/unproject roundtrip retains precision', () => {
@@ -19,8 +19,8 @@ test('project/unproject roundtrip retains precision', () => {
     ];
 
     for (const {lng, lat} of coords) {
-        expect(lngLatSpace.unprojectX(lngLatSpace.projectX(lng))).toBeCloseTo(lng, 10);
-        expect(lngLatSpace.unprojectY(lngLatSpace.projectY(lat))).toBeCloseTo(lat, 10);
+        expect(mercatorWorldCoordinateHelper.unprojectX(mercatorWorldCoordinateHelper.projectX(lng))).toBeCloseTo(lng, 10);
+        expect(mercatorWorldCoordinateHelper.unprojectY(mercatorWorldCoordinateHelper.projectY(lat))).toBeCloseTo(lat, 10);
     }
 });
 

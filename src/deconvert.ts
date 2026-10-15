@@ -1,13 +1,13 @@
-import {lngLatSpace, type CoordinateSpace} from './coordinate-space';
+import {mercatorWorldCoordinateHelper, type WorldCoordinateHelper} from './world-coordinate-helper';
 import type {GeoJSONVTInternalFeature} from './definitions';
 
 /**
  * Converts internal source features back to GeoJSON format.
  */
-export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], space: CoordinateSpace = lngLatSpace): GeoJSON.GeoJSON {
+export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], worldCoordinateHelper: WorldCoordinateHelper = mercatorWorldCoordinateHelper): GeoJSON.GeoJSON {
     const geojson: GeoJSON.GeoJSON = {
         type: 'FeatureCollection',
-        features: source.map(feature => featureToGeoJSON(feature, space))
+        features: source.map(feature => featureToGeoJSON(feature, worldCoordinateHelper))
     };
 
     return geojson;
@@ -16,10 +16,10 @@ export function convertToGeoJSON(source: GeoJSONVTInternalFeature[], space: Coor
 /**
  * Converts a single internal feature to GeoJSON format.
  */
-export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, space: CoordinateSpace = lngLatSpace): GeoJSON.Feature {
+export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, worldCoordinateHelper: WorldCoordinateHelper = mercatorWorldCoordinateHelper): GeoJSON.Feature {
     const geojsonFeature: GeoJSON.Feature = {
         type: 'Feature',
-        geometry: geometryToGeoJSON(feature, space),
+        geometry: geometryToGeoJSON(feature, worldCoordinateHelper),
         properties: feature.tags
     };
     if (feature.id != null) {
@@ -32,51 +32,51 @@ export function featureToGeoJSON(feature: GeoJSONVTInternalFeature, space: Coord
 /**
  * Converts a single internal feature geometry to GeoJSON format.
  */
-function geometryToGeoJSON(feature: GeoJSONVTInternalFeature, space: CoordinateSpace): GeoJSON.Geometry {
+function geometryToGeoJSON(feature: GeoJSONVTInternalFeature, worldCoordinateHelper: WorldCoordinateHelper): GeoJSON.Geometry {
     const {type, geometry} = feature;
 
     switch (type) {
         case 'Point':
             return {
                 type: type,
-                coordinates: unprojectPoint(geometry[0], geometry[1], space)
+                coordinates: unprojectPoint(geometry[0], geometry[1], worldCoordinateHelper)
             };
         case 'MultiPoint':
             return {
                 type: type,
-                coordinates: unprojectPoints(geometry, space)
+                coordinates: unprojectPoints(geometry, worldCoordinateHelper)
             };
         case 'LineString':
             return {
                 type: type,
-                coordinates: unprojectPoints(geometry.points, space)
+                coordinates: unprojectPoints(geometry.points, worldCoordinateHelper)
             };
         case 'MultiLineString':
         case 'Polygon':
             return {
                 type: type,
-                coordinates: geometry.map(ring => unprojectPoints(ring.points, space))
+                coordinates: geometry.map(ring => unprojectPoints(ring.points, worldCoordinateHelper))
             };
         case 'MultiPolygon':
             return {
                 type: type,
                 coordinates: geometry.map(polygon =>
-                    polygon.map(ring => unprojectPoints(ring.points, space))
+                    polygon.map(ring => unprojectPoints(ring.points, worldCoordinateHelper))
                 )
             };
     }
 }
 
-export function unprojectPoints(coords: number[] | Float64Array, space: CoordinateSpace = lngLatSpace): GeoJSON.Position[] {
+export function unprojectPoints(coords: number[] | Float64Array, worldCoordinateHelper: WorldCoordinateHelper = mercatorWorldCoordinateHelper): GeoJSON.Position[] {
     const result: GeoJSON.Position[] = [];
 
     for (let i = 0; i < coords.length; i += 3) {
-        result.push(unprojectPoint(coords[i], coords[i + 1], space));
+        result.push(unprojectPoint(coords[i], coords[i + 1], worldCoordinateHelper));
     }
 
     return result;
 }
 
-function unprojectPoint(x: number, y: number, space: CoordinateSpace): GeoJSON.Position {
-    return [space.unprojectX(x), space.unprojectY(y)];
+function unprojectPoint(x: number, y: number, worldCoordinateHelper: WorldCoordinateHelper): GeoJSON.Position {
+    return [worldCoordinateHelper.unprojectX(x), worldCoordinateHelper.unprojectY(y)];
 }
