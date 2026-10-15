@@ -312,6 +312,15 @@ test('updateData keeps a feature loaded without a geometry away from the update 
     expect(index.getTile(0, 0, 0)?.features.map(feature => feature.id).sort()).toEqual(['later', 'point']);
 });
 
+test('updateData hands the filter a feature without coordinates with the id it is kept under', () => {
+    const index = new GeoJSONVT({type: 'FeatureCollection', features: [{type: 'Feature', id: 'raw', properties: {key: 'promoted'}, geometry: {type: 'Point', coordinates: []}}]}, {updateable: true, promoteId: 'key'});
+
+    index.updateData({}, feature => feature.id === 'promoted');
+    index.updateData({update: [{id: 'promoted', newGeometry: {type: 'Point', coordinates: [10, 10]}}]});
+
+    expect(index.getTile(0, 0, 0).features.map(feature => feature.id)).toEqual(['promoted']);
+});
+
 test('keeps the corner of a polygon whose vertex lies on the left edge of a tile', () => {
     const polygon = {
         type: 'Polygon' as const,

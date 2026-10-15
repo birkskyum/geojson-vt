@@ -42,7 +42,7 @@ function convertFeature(features: GeoJSONVTInternalFeature[], geojson: GeoJSON.F
     if (features.length > count) {
         unlocated.delete(id);
     } else {
-        unlocated.set(id, geojson);
+        unlocated.set(id, {...geojson, id});
     }
 }
 
