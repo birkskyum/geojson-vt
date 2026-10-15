@@ -158,6 +158,13 @@ test('wraps positions in the unit square around the antimeridian by default', ()
     expect(index.getTile(1, 0, 0).features.map(feature => feature.geometry)).toEqual([[[-8, 2048]]]);
 });
 
+test('cuts the top tile above and below for positions in a unit square that wraps', () => {
+    const fromThreeBelowToThreeAbove = {type: 'Feature' as const, properties: {}, geometry: {type: 'LineString' as const, coordinates: [[0.25, -3], [0.75, 3]]}};
+    const index = new GeoJSONVT(fromThreeBelowToThreeAbove, {coordinates: 'unitSquare'});
+
+    expect(index.getTile(0, 0, 0).features[0].geometry).toEqual([[[2043, -64], [2395, 4160]]]);
+});
+
 test('copies no lng/lat features across the antimeridian without wrap', () => {
     const nearTheAntimeridian = {type: 'Feature' as const, properties: {}, geometry: {type: 'Point' as const, coordinates: [179.9, -10]}};
     const index = new GeoJSONVT(nearTheAntimeridian, {wrap: false});

@@ -122,14 +122,16 @@ export class TileIndex implements GeoJSONVTTileIndex {
     }
 
     /**
-     * The features the top tile starts from: all of them in a wrapping world, where wrapping already put them inside,
-     * and only what lies inside the world square and its buffer without `wrap`. The index keeps the rest, so
-     * an update can still move a feature in from outside.
+     * The features the top tile starts from. A world that wraps keeps them all left and right, where wrapping already
+     * put them inside, and one that doesn't only what lies inside the world square and its buffer. Positions in the
+     * unit square are also cut above and below in a world that wraps, where lng/lat is clamped already. The index keeps
+     * the rest, so an update can still move a feature in from outside.
      */
     private clipToWorld(features: GeoJSONVTInternalFeature[]): GeoJSONVTInternalFeature[] {
-        if (this.options.wrap) return features;
+        const {wrap, coordinates} = this.options;
+        if (wrap && coordinates !== 'unitSquare') return features;
         const buffer = this.options.buffer / this.options.extent;
-        const inX = clip(features, 1, -buffer, 1 + buffer, AxisType.X, -Infinity, Infinity, this.options) || [];
+        const inX = wrap ? features : clip(features, 1, -buffer, 1 + buffer, AxisType.X, -Infinity, Infinity, this.options) || [];
         return clip(inX, 1, -buffer, 1 + buffer, AxisType.Y, -Infinity, Infinity, this.options) || [];
     }
 
