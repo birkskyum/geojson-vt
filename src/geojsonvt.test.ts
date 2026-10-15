@@ -312,13 +312,22 @@ test('updateData keeps a feature loaded without a geometry away from the update 
     expect(index.getTile(0, 0, 0)?.features.map(feature => feature.id).sort()).toEqual(['later', 'point']);
 });
 
-test('updateData hands the filter a feature without coordinates with the id it is kept under', () => {
+test('updateData hands the filter a feature without coordinates with its promoted id', () => {
     const index = new GeoJSONVT({type: 'FeatureCollection', features: [{type: 'Feature', id: 'raw', properties: {key: 'promoted'}, geometry: {type: 'Point', coordinates: []}}]}, {updateable: true, promoteId: 'key'});
 
     index.updateData({}, feature => feature.id === 'promoted');
     index.updateData({update: [{id: 'promoted', newGeometry: {type: 'Point', coordinates: [10, 10]}}]});
 
-    expect(index.getTile(0, 0, 0).features.map(feature => feature.id)).toEqual(['promoted']);
+    expect(index.getTile(0, 0, 0)?.features.map(feature => feature.id)).toEqual(['promoted']);
+});
+
+test('updateData hands the filter a feature without coordinates with its generated id', () => {
+    const index = new GeoJSONVT({type: 'FeatureCollection', features: [{type: 'Feature', properties: {}, geometry: {type: 'Point', coordinates: []}}]}, {updateable: true, generateId: true});
+
+    index.updateData({}, feature => feature.id === 0);
+    index.updateData({update: [{id: 0, newGeometry: {type: 'Point', coordinates: [10, 10]}}]});
+
+    expect(index.getTile(0, 0, 0)?.features.map(feature => feature.id)).toEqual([0]);
 });
 
 test('keeps the corner of a polygon whose vertex lies on the left edge of a tile', () => {
