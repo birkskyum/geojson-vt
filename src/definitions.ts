@@ -91,6 +91,11 @@ export type GeoJSONVTOptions = {
 
 export type GeoJSONToTileOptions = GeoJSONVTOptions & {
     /**
+     * Whether to wrap features around the antimeridian, see `wrap` in {@link GeoJSONVTOptions}.
+     * @default false
+     */
+    wrap?: boolean;
+    /**
      * Whether to clip features to the tile boundary
      * @default false
      */
