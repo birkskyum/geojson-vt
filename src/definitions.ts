@@ -1,7 +1,7 @@
 /**
  * The space positions are given in, see `coordinates` in {@link GeoJSONVTOptions}.
  */
-export type GeoJSONVTCoordinates = 'lngLat' | 'unitSquare';
+export type GeoJSONVTCoordinatesType = 'lngLat' | 'unitSquare';
 
 export type GeoJSONVTOptions = {
     /**
@@ -66,7 +66,7 @@ export type GeoJSONVTOptions = {
      * @experimental
      * @default 'lngLat'
      */
-    coordinates?: GeoJSONVTCoordinates;
+    coordinates?: GeoJSONVTCoordinatesType;
     /**
      * Whether the world wraps around the antimeridian. With `true`, features near the left or right edge are copied
      * across it, and the tiles at either edge include what lies past it. With `false`, the world is the square and ends
@@ -289,7 +289,7 @@ export type SuperclusterOptions = {
      * @experimental
      * @default 'lngLat'
      */
-    coordinates?: GeoJSONVTCoordinates;
+    coordinates?: GeoJSONVTCoordinatesType;
     /**
      * Whether the world wraps around the antimeridian, see `wrap` in {@link GeoJSONVTOptions}. With `false`, points
      * outside the square are left out of the clusters, the tiles at an edge get no points from the opposite one, and
