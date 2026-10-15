@@ -218,8 +218,8 @@ test('does not keep the cluster properties of an earlier load', () => {
     expect(index.clusterProps.length).toBe(count);
 });
 
-test('takes points and the getClusters bounding box in world coordinates with worldCoordinates', () => {
-    const index = new ClusterTileIndex({}, true);
+test('takes points and the getClusters bounding box in the unit square with unitSquare coordinates', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: false});
     index.load([
         {type: 'Feature', properties: {name: 'a'}, geometry: {type: 'Point', coordinates: [0.25, 0.25]}},
         {type: 'Feature', properties: {name: 'b'}, geometry: {type: 'Point', coordinates: [0.75, 0.75]}}
@@ -228,8 +228,8 @@ test('takes points and the getClusters bounding box in world coordinates with wo
     expect(index.getClusters([0, 0, 0.5, 0.5], 0).map(f => f.geometry.coordinates)).toEqual([[0.25, 0.25]]);
 });
 
-test('leaves points outside the world out of load with worldCoordinates', () => {
-    const index = new ClusterTileIndex({}, true);
+test('leaves points outside the world out of load in a unit square without wrap', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: false});
     index.load([
         {type: 'Feature', properties: {name: 'inside'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}},
         {type: 'Feature', properties: {name: 'outside'}, geometry: {type: 'Point', coordinates: [1.03, 0.5]}}
@@ -238,8 +238,8 @@ test('leaves points outside the world out of load with worldCoordinates', () => 
     expect(index.getTile(0, 0, 0).features.map(feature => feature.geometry)).toEqual([[[507, 256]]]);
 });
 
-test('returns no tile outside the world with worldCoordinates', () => {
-    const index = new ClusterTileIndex({}, true);
+test('returns no tile outside the world in a unit square without wrap', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: false});
     index.load([
         {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [0.01, 0.5]}},
         {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}},
@@ -293,8 +293,8 @@ test('does not cluster points that are farther apart than the radius on a high z
     expect(index.getClusters([-180, -90, 180, 90], 20)).toHaveLength(2);
 });
 
-test('returns a cluster within a step of the mean of its points with worldCoordinates', () => {
-    const index = new ClusterTileIndex({}, true);
+test('returns a cluster within a step of the mean of its points in a unit square without wrap', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: false});
     index.load([
         {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
         {type: 'Feature', properties: null, geometry: {type: 'Point', coordinates: [0.54, 0.42]}},
@@ -305,4 +305,24 @@ test('returns a cluster within a step of the mean of its points with worldCoordi
 
     expect(x).toBeCloseTo(0.5466666667, 9);
     expect(y).toBeCloseTo(0.4133333333, 9);
+});
+
+test('getClusters keeps only the part of a box inside a world that does not wrap', () => {
+    const index = new ClusterTileIndex({wrap: false});
+    index.load([
+        {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [-175, 0]}},
+        {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [175, 0]}}
+    ]);
+
+    expect(index.getClusters([170, -20, 190, 20], 17).map(f => f.properties.name)).toEqual(['east']);
+});
+
+test('getClusters repeats a box across the edge of a unit square that wraps', () => {
+    const index = new ClusterTileIndex({coordinates: 'unitSquare', wrap: true});
+    index.load([
+        {type: 'Feature', properties: {name: 'west'}, geometry: {type: 'Point', coordinates: [0.01, 0.5]}},
+        {type: 'Feature', properties: {name: 'east'}, geometry: {type: 'Point', coordinates: [0.99, 0.5]}}
+    ]);
+
+    expect(index.getClusters([0.95, 0, 1.05, 1], 17).map(f => f.properties.name).sort()).toEqual(['east', 'west']);
 });

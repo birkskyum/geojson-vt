@@ -64,7 +64,8 @@ var tileIndex = new GeoJSONVT(data, {
 	promoteId: null,    // name of a feature property to promote to feature.id. Cannot be used with `generateId`
 	generateId: false,  // whether to generate feature ids. Cannot be used with `promoteId`
 	updateable: false,  // whether the tile index can be updated (with the caveat of a stored simplified copy)
-	worldCoordinates: false, // whether positions are world coordinates from 0 to 1 instead of lng/lat
+	coordinates: 'lngLat', // 'lngLat', projected with web mercator, or 'unitSquare', x and y from 0 to 1 taken as they are
+	wrap: true,            // whether the world wraps around the antimeridian
 	indexMaxZoom: 5,       // max zoom in the initial tile index
 	indexMaxPoints: 100000 // max number of points per tile in the index
 });
@@ -74,7 +75,11 @@ By default, tiles at zoom levels above `indexMaxZoom` are generated on the fly, 
 
 The `promoteId` and `generateId` options ignore existing `id` values on the feature objects.
 
-With `worldCoordinates: true`, positions are x and y from 0 to 1 across the world square, y growing downward, instead of lng/lat, for data in a world of its own such as a map projection's. The square ends at its edges: positions are neither projected nor wrapped around or clamped, features are cut at the tile buffer around it, points outside it are left out of the clusters, `getTile` returns `null` for tiles outside it, and `getData` and the cluster methods return world coordinates.
+With `coordinates: 'unitSquare'`, positions are x and y from 0 to 1 across the square tile 0/0/0 covers, y growing downward, instead of lng/lat, for data in another projection. They are taken as they are, neither projected nor clamped, and `getData` and the cluster methods return them in the same square.
+
+With `wrap: false`, the world is that square and ends at its edges. Nothing is copied across the antimeridian, features are cut at the tile buffer around the square, points outside it are left out of the clusters, and `getTile` returns `null` for tiles outside it. A map projection that is not repeated around the world, for example, uses `coordinates: 'unitSquare'` and `wrap: false`.
+
+`coordinates` and `wrap` are experimental, so they can still change in a minor release.
 
 GeoJSON-VT only operates on zoom levels up to 24.
 

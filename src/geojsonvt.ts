@@ -5,7 +5,7 @@ import {wrap} from './wrap';
 import {applySourceDiff, type GeoJSONVTSourceDiff} from './difference';
 import {ClusterTileIndex, defaultClusterOptions} from './cluster-tile-index';
 import {TileIndex} from './tile-index';
-import type {ClusterOrPointFeature, GeoJSONVTTileIndex, GeoJSONVTInternalFeature, GeoJSONVTOptions, GeoJSONVTTile, SuperclusterOptions} from './definitions';
+import type {ClusterOrPointFeature, GeoJSONVTTileIndex, GeoJSONVTInternalFeature, GeoJSONVTOptions, GeoJSONVTTile} from './definitions';
 
 export const defaultOptions: GeoJSONVTOptions = {
     maxZoom: 14,
@@ -21,7 +21,8 @@ export const defaultOptions: GeoJSONVTOptions = {
     cluster: false,
     clusterOptions: defaultClusterOptions,
     debug: 0,
-    worldCoordinates: false
+    coordinates: 'lngLat',
+    wrap: true
 };
 
 /**
@@ -37,7 +38,7 @@ export class GeoJSONVT {
 
     constructor(data: GeoJSON.GeoJSON, options?: GeoJSONVTOptions) {
         options = this.options = Object.assign({}, defaultOptions, options);
-        this.worldCoordinateHelper = getWorldCoordinateHelper(options.worldCoordinates);
+        this.worldCoordinateHelper = getWorldCoordinateHelper(options.coordinates);
 
         const debug = options.debug;
 
@@ -70,7 +71,7 @@ export class GeoJSONVT {
     }
 
     private initializeIndex(features: GeoJSONVTInternalFeature[], options: GeoJSONVTOptions) {
-        this.tileIndex = options.cluster ? new ClusterTileIndex(options.clusterOptions, options.worldCoordinates) : new TileIndex(options);
+        this.tileIndex = options.cluster ? new ClusterTileIndex({...options.clusterOptions, coordinates: options.coordinates, wrap: options.wrap}) : new TileIndex(options);
         if (!features.length) return;
         this.tileIndex.initialize(features);
     }
@@ -151,9 +152,9 @@ export class GeoJSONVT {
     /**
      * Update supercluster options and regenerate the index.
      * @param cluster - whether to enable clustering
-     * @param clusterOptions - {@link SuperclusterOptions}
+     * @param clusterOptions - {@link SuperclusterOptions} without `coordinates` and `wrap`, which come from the index options
      */
-    updateClusterOptions(cluster: boolean, clusterOptions: SuperclusterOptions) {
+    updateClusterOptions(cluster: boolean, clusterOptions: GeoJSONVTOptions['clusterOptions']) {
         const wasCluster = this.options.cluster;
         this.options.cluster = cluster;
         this.options.clusterOptions = clusterOptions;
