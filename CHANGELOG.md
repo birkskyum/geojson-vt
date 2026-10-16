@@ -5,8 +5,6 @@
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
 
-- fix: hand the update filter features without coordinates with the id they are kept under ([#243](https://github.com/maplibre/geojson-vt/pull/243)) (by [@birkskyum](https://github.com/birkskyum))
-- refactor: pass one worldCoordinateHelper instead of the worldCoordinates flag ([#242](https://github.com/maplibre/geojson-vt/pull/242)) (by [@birkskyum](https://github.com/birkskyum))
 ## 6.3.0
 ### ✨ Features and improvements
 - Replace the experimental `worldCoordinates` option with two experimental options, `coordinates`, for positions in lng/lat or in the unit square, and `wrap`, for whether the world wraps around the antimeridian. `worldCoordinates: true` becomes `coordinates: 'unitSquare', wrap: false`, and `Supercluster` takes both in its options instead of its second constructor argument and its `worldCoordinates` field ([#241](https://github.com/maplibre/geojson-vt/pull/241)) (by [@birkskyum](https://github.com/birkskyum))
