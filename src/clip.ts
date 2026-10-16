@@ -50,7 +50,6 @@ export function clip(features: GeoJSONVTInternalFeature[], scale: number, start:
         }
 
         switch (feature.type) {
-            case 'Point':
             case 'MultiPoint': {
                 clipPointFeature(feature, clipped, start, end, axis);
                 continue;
